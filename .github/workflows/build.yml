@@ -697,20 +697,35 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
       
-      - name: "🔍 Get Release ID"
-        id: get-release-id
-        run: |
-          RELEASE_TAG="main_2025-02-28_19-26-39"  # Replace with your release tag
-          RELEASE_ID=$(curl -s -H "Authorization: token ${{ secrets.RELEASE_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/$RELEASE_TAG" | jq -r '.id')
-          echo "RELEASE_ID=$RELEASE_ID" >> $GITHUB_ENV
+      - name: "🚀 Create GitHub Release"
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        with:
+          tag_name: ${{ env.kernelBranch }}_${{ env.BUILD_TIME }}
+          release_name: Release ${{ env.kernelBranch }} - ${{ env.BUILD_TIME }}
+          body: |
+            **Build Notes**
+            - Repository Branch: `${{ github.ref_name }}`
+            - Compiled with ${{ github.event.inputs.clangCompiler }}
+            - KernelSU: ${{ github.event.inputs.kernelSUChoice }}
+            - SUSFS: ${{ github.event.inputs.withKernelSUSFS }}
+            - Branch: ${{ github.event.inputs.susfsBranch }}
+        
+            **Flash Instructions**
+            - Use latest recovery
+            - Flash via Orangefox or TWRP
+          draft: false
+          prerelease: false
+          generate_release_notes: true
       
       - name: "⬆️ Upload AnyKernel3 to GitHub Release"
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         with:
-          upload_url: https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.RELEASE_ID }}/assets{?name,label}
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./${{ env.kernelDir }}/${{ env.kernelName }}/${{ env.kernelBranch }}_${{ env.BUILD_TIME }}.zip
           asset_name: Anykernel3_${{ env.kernelBranch }}_${{ env.BUILD_TIME }}.zip
           asset_content_type: application/zip
