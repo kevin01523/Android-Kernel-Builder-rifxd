@@ -620,8 +620,8 @@ jobs:
         env:
           args: ${{ steps.generate-args.outputs.args }}
         run: |
-          export KBUILD_BUILD_USER="Action"
-          export KBUILD_BUILD_HOST="GitHub"
+          export KBUILD_BUILD_USER="リアム"
+          export KBUILD_BUILD_HOST="belowzeroiq"
         
           # Enable CCache
           export CCACHE_DIR="${{ github.workspace }}/.ccache"
