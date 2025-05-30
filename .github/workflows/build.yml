@@ -314,7 +314,8 @@ jobs:
             CC=$(echo $params | jq -r ".CC")
           
             echo "ARCH=arm64" >> $GITHUB_ENV
-            echo "LLVM=1" >> $GITHUB_ENV
+            echo "LLVM=-14" >> $GITHUB_ENV
+            echo "LLVM_IAS=1" >> $GITHUB_ENV
             echo "LTO=thin" >> $GITHUB_ENV  # ✅ Enable ThinLTO
 
             args="-j$(nproc --all)"
