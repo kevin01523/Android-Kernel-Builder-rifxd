@@ -1,0 +1,57 @@
+name: Build Sunfish Kernel (android-msm-sunfish-4.14-android13-qpr3, Clang)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout your repo
+        uses: actions/checkout@v4
+
+      - name: Clone Sunfish Kernel Source (android-msm-sunfish-4.14-android13-qpr3)
+        run: |
+          git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev ccache build-essential dwarves
+
+      - name: Download prebuilt Clang and GCC toolchains
+        run: |
+          mkdir -p ~/toolchains
+          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r450784d.tar.gz -O clang.tar.gz
+          tar -xzf clang.tar.gz -C ~/toolchains
+          wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
+          mkdir -p ~/toolchains/gcc
+          tar -xzf gcc.tar.gz -C ~/toolchains/gcc
+
+      - name: Build kernel
+        env:
+          ARCH: arm64
+          SUBARCH: arm64
+          CLANG_TRIPLE: aarch64-linux-gnu-
+          CROSS_COMPILE: ~/toolchains/gcc/bin/aarch64-linux-android-
+          CC: ~/toolchains/bin/clang
+          PATH: ~/toolchains/bin:~/toolchains/gcc/bin:$PATH
+        run: |
+          cd kernel
+          make O=out ARCH=arm64 sunfish_defconfig
+          make -j$(nproc) O=out ARCH=arm64 \
+            CC=clang \
+            CROSS_COMPILE=aarch64-linux-android- \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            LLVM=1
+
+      - name: Upload kernel image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image
+          path: kernel/out/arch/arm64/boot/Image
