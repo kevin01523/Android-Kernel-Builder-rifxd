@@ -24,10 +24,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev ccache build-essential dwarves
 
-      - name: Download prebuilt Clang and GCC toolchains
+      - name: Download Clang and GCC toolchains
         run: |
           mkdir -p ~/toolchains
-          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r450784d.tar.gz -O clang.tar.gz
+          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz -O clang.tar.gz
           tar -xzf clang.tar.gz -C ~/toolchains
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
           mkdir -p ~/toolchains/gcc
