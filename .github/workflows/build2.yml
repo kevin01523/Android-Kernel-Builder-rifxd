@@ -1,4 +1,4 @@
-name: Build Android Kernel (Android Official Clang Only)
+name: Android Kernel Build (No Neutron, glibc-aware)
 
 on:
   workflow_dispatch:
@@ -12,44 +12,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout your repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install dependencies (glibc, cross-compilers, etc)
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc curl git zip ftp gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev lftp zstd wget libfl-dev python3 libarchive-tools llvm-14-linker-tools unzip
+          sudo apt-get install -y build-essential bc curl git zip ftp gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libc6-dev lftp zstd wget libfl-dev python3 libarchive-tools llvm-14-linker-tools unzip
 
-      - name: Download and extract Android Clang toolchain
+      - name: Download and extract Android Clang toolchain (official)
         run: |
-          set -eu
-          ANDROID_CLANG_URL=https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz
+          ANDROID_CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz"
           if [ ! -d "./clang-android-r450784d/bin" ]; then
-            echo "Android clang is not installed, installing it"
             mkdir -p clang-android-r450784d
             wget -q -O clang-android-r450784d.tar.gz "$ANDROID_CLANG_URL"
             tar -xzf clang-android-r450784d.tar.gz -C clang-android-r450784d
           fi
 
+      - name: Print glibc version
+        run: |
+          ldd --version | head -n1
+          dpkg -l libc6
+
       - name: Build Kernel
         run: |
           set -e
+          # Get glibc version number
+          host_glibc=$(ldd --version | head -n1 | grep -o '[0-9]\+\.[0-9]\+' | head -n1)
+          echo "Detected glibc version: $host_glibc"
           export CLANG_BIN=$(pwd)/clang-android-r450784d/bin
           export ARCH=arm64
           export SUBARCH=arm64
           export CC=$CLANG_BIN/clang
           export PATH=$CLANG_BIN:$PATH
-          # System cross-compilers from apt will be used automatically by clang if configured in kernel Makefile
 
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
           fi
 
           cd kernel
-          make O=../out ARCH=arm64 sunfish_defconfig
-          make -j$(nproc) O=../out ARCH=arm64 \
-            CC=clang \
-            LLVM=1
+
+          # Kernel defconfig
+          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 sunfish_defconfig O=../out
+
+          echo "Compilation started..."
+          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 O=../out
+
           cd ..
 
       - name: Clone AnyKernel3
