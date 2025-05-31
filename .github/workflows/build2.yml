@@ -22,7 +22,21 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y bc bison flex libssl-dev libncurses5-dev ccache build-essential dwarves
+          sudo apt-get install -y \
+            make \
+            bc \
+            bison \
+            flex \
+            libssl-dev \
+            libncurses5-dev \
+            ccache \
+            build-essential \
+            dwarves \
+            libelf-dev \
+            git \
+            wget \
+            curl \
+            python3
 
       - name: Download Clang and GCC toolchains
         run: |
