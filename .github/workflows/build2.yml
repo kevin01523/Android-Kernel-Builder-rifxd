@@ -1,4 +1,4 @@
-name: Android Kernel Build (No Neutron, glibc-aware)
+name: Android Kernel Build (Android Official Clang Only, LLVMgold.so Fix)
 
 on:
   workflow_dispatch:
@@ -18,7 +18,9 @@ jobs:
       - name: Install dependencies (glibc, cross-compilers, etc)
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc curl git zip ftp gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libc6-dev lftp zstd wget libfl-dev python3 libarchive-tools llvm-14-linker-tools unzip
+          sudo apt-get install -y build-essential bc curl git zip ftp \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libc6-dev lftp zstd wget \
+            libfl-dev python3 libarchive-tools llvm-14-linker-tools unzip
 
       - name: Download and extract Android Clang toolchain (official)
         run: |
@@ -29,6 +31,20 @@ jobs:
             tar -xzf clang-android-r450784d.tar.gz -C clang-android-r450784d
           fi
 
+      - name: Install llvm-gold plugin and link LLVMgold.so
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y llvm-14
+          LLVMGOLD=$(find /usr -name LLVMgold.so | head -n1)
+          if [ -n "$LLVMGOLD" ]; then
+            mkdir -p clang-android-r450784d/lib
+            ln -sf "$LLVMGOLD" clang-android-r450784d/lib/LLVMgold.so
+            echo "Symlinked $LLVMGOLD to clang-android-r450784d/lib/LLVMgold.so"
+          else
+            echo "LLVMgold.so not found in llvm-14 package"
+          fi
+          echo "LD_LIBRARY_PATH=$(pwd)/clang-android-r450784d/lib:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
       - name: Print glibc version
         run: |
           ldd --version | head -n1
@@ -36,10 +52,7 @@ jobs:
 
       - name: Build Kernel
         run: |
-          set -e
-          # Get glibc version number
-          host_glibc=$(ldd --version | head -n1 | grep -o '[0-9]\+\.[0-9]\+' | head -n1)
-          echo "Detected glibc version: $host_glibc"
+          export LD_LIBRARY_PATH=$(pwd)/clang-android-r450784d/lib:$LD_LIBRARY_PATH
           export CLANG_BIN=$(pwd)/clang-android-r450784d/bin
           export ARCH=arm64
           export SUBARCH=arm64
@@ -47,41 +60,4 @@ jobs:
           export PATH=$CLANG_BIN:$PATH
 
           if [ ! -d kernel ]; then
-            git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
-          fi
-
-          cd kernel
-
-          # Kernel defconfig
-          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 sunfish_defconfig O=../out
-
-          echo "Compilation started..."
-          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 O=../out
-
-          cd ..
-
-      - name: Clone AnyKernel3
-        run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-
-      - name: Copy kernel Image to AnyKernel3
-        run: |
-          cp out/arch/arm64/boot/Image AnyKernel3/
-
-      - name: Create AnyKernel3 flashable zip
-        run: |
-          cd AnyKernel3
-          zip -r9 ../AnyKernel3-flashable.zip ./*
-          cd ..
-
-      - name: Upload AnyKernel3 flashable zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: AnyKernel3-flashable
-          path: AnyKernel3-flashable.zip
-
-      - name: Upload kernel Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-image
-          path: out/arch/arm64/boot/Image
+            git clone --depth=1 --branch android
