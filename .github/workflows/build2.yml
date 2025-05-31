@@ -57,10 +57,16 @@ jobs:
           export PATH=/home/runner/toolchains/clang/bin:/home/runner/toolchains/gcc/bin:$PATH
 
           echo "Listing GCC toolchain binaries:"
-          ls -lv aarch64-linux-android-gcc >/dev/null 2>&1; then
+          ls -l /home/runner/toolchains/gcc/bin
+
+          echo "Verifying build tools..."
+          command -v make || { echo "make not found!"; exit 127; }
+          command -v clang || { echo "clang not found!"; exit 127; }
+          # GCC toolchain check (fix)
+          if command -v aarch64-linux-android-gcc >/dev/null 2>&1; then
             echo "aarch64-linux-android-gcc found!"
           else
-            echo "aarch64-linux-android-gcc not found! Checking with ls..."
+            echo "aarch64-linux-android-gcc not found! Checking bin directory for similar files..."
             ls -l /home/runner/toolchains/gcc/bin/aarch64-linux-android-gcc* || true
             echo "GCC not found or not in PATH!"; exit 127;
           fi
@@ -77,7 +83,20 @@ jobs:
           fi
 
           cd kernel
-          echo "Current directory: $(depth=1 https://github.com/osm0sis/AnyKernel3.git
+          echo "Current directory: $(pwd)"
+          which make
+          make --version
+          make O=../out ARCH=arm64 sunfish_defconfig
+          make -j$(nproc) O=../out ARCH=arm64 \
+            CC=clang \
+            CROSS_COMPILE=aarch64-linux-android- \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            LLVM=1
+          cd ..
+
+      - name: Clone AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
 
       - name: Copy kernel Image to AnyKernel3
         run: |
