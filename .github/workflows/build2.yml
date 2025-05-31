@@ -51,14 +51,11 @@ jobs:
             pigz \
             device-tree-compiler
 
-      - name: Download AOSP build tools and toolchains (Android 13)
+      - name: Download AOSP toolchains (Android 13)
         run: |
+          set -e
           mkdir -p aosp-tools
           cd aosp-tools
-
-          # Download platform tools
-          wget -q https://dl.google.com/android/repository/platform-tools_r34.0.4-linux.zip
-          unzip platform-tools_r34.0.4-linux.zip
 
           # Download official Android 13 clang (r450784d)
           wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz
@@ -82,7 +79,7 @@ jobs:
 
           export KERNEL_DIR=$(pwd)/aosp-tools
           export OUT_DIR=$(pwd)/out
-          export PATH="$KERNEL_DIR/platform-tools:$KERNEL_DIR/out/host/linux-x86/bin:/usr/bin:$PATH"
+          export PATH="$KERNEL_DIR/out/host/linux-x86/bin:/usr/bin:$PATH"
           export DTC_EXT=dtc
           export PATH="$KERNEL_DIR/clang-r450784d/bin:$PATH"
           export CLANG_TRIPLE=aarch64-linux-gnu-
