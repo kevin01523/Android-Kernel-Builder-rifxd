@@ -1,4 +1,4 @@
-name: Android Kernel Build (Android Official Clang Only, LLVMgold.so Fix)
+name: Android Kernel Build (AOSP Tools, Official Clang, Sunfish)
 
 on:
   workflow_dispatch:
@@ -15,89 +15,47 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies (glibc, cross-compilers, etc)
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc curl git zip ftp \
-            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libc6-dev lftp zstd wget \
-            libfl-dev python3 libarchive-tools llvm-14-linker-tools unzip \
-            binutils-arm-linux-gnueabihf
+          sudo apt-get install -y build-essential bc curl git zip lz4 libssl-dev \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi python3 rsync flex bison \
+            unzip libarchive-tools libncurses5 wget
 
-      - name: Download and extract Android Clang toolchain (official)
+      - name: Download AOSP build tools and toolchains (Android 13)
         run: |
-          ANDROID_CLANG_URL="https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz"
-          if [ ! -d "./clang-android-r450784d/bin" ]; then
-            mkdir -p clang-android-r450784d
-            wget -q -O clang-android-r450784d.tar.gz "$ANDROID_CLANG_URL"
-            tar -xzf clang-android-r450784d.tar.gz -C clang-android-r450784d
-          fi
+          mkdir -p aosp-tools
+          cd aosp-tools
 
-      - name: Install llvm-gold plugin and link LLVMgold.so
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y llvm-14
-          LLVMGOLD=$(find /usr -name LLVMgold.so | head -n1)
-          if [ -n "$LLVMGOLD" ]; then
-            mkdir -p clang-android-r450784d/lib
-            ln -sf "$LLVMGOLD" clang-android-r450784d/lib/LLVMgold.so
-            echo "Symlinked $LLVMGOLD to clang-android-r450784d/lib/LLVMgold.so"
-          else
-            echo "LLVMgold.so not found in llvm-14 package"
-          fi
-          echo "LD_LIBRARY_PATH=$(pwd)/clang-android-r450784d/lib:\$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          # Download platform tools
+          wget -q https://dl.google.com/android/repository/platform-tools_r34.0.4-linux.zip
+          unzip platform-tools_r34.0.4-linux.zip
 
-      - name: Print glibc version
-        run: |
-          ldd --version | head -n1
-          dpkg -l libc6
+          # Download official Android 13 clang (r450784d)
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz
+          mkdir clang-r450784d
+          tar -xzf clang-r450784d.tar.gz -C clang-r450784d
+
+          # Download official AOSP GCC 4.9 for aarch64 and arm
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/tags/android-13.0.0_r13.tar.gz -O aarch64-linux-android-4.9.tar.gz
+          mkdir aarch64-linux-android-4.9
+          tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
+
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/refs/tags/android-13.0.0_r13.tar.gz -O arm-linux-androideabi-4.9.tar.gz
+          mkdir arm-linux-androideabi-4.9
+          tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
+
+          cd ..
 
       - name: Build Kernel
         run: |
-          export LD_LIBRARY_PATH=$(pwd)/clang-android-r450784d/lib:$LD_LIBRARY_PATH
-          export CLANG_BIN=$(pwd)/clang-android-r450784d/bin
-          export ARCH=arm64
-          export SUBARCH=arm64
-          export CC=$CLANG_BIN/clang
-          export PATH=$CLANG_BIN:$PATH
+          rm -rf out
 
-          # Use ARM32 cross-binutils for vdso32 build
-          export AS=arm-linux-gnueabihf-as
-          export LD=arm-linux-gnueabihf-ld
-
-          if [ ! -d kernel ]; then
-            git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
-          fi
-
-          cd kernel
-          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 sunfish_defconfig O=../out
-
-          echo "Compilation started..."
-          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 O=../out
-
-          cd ..
-
-      - name: Clone AnyKernel3
-        run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-
-      - name: Copy kernel Image to AnyKernel3
-        run: |
-          cp out/arch/arm64/boot/Image AnyKernel3/
-
-      - name: Create AnyKernel3 flashable zip
-        run: |
-          cd AnyKernel3
-          zip -r9 ../AnyKernel3-flashable.zip ./*
-          cd ..
-
-      - name: Upload AnyKernel3 flashable zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: AnyKernel3-flashable
-          path: AnyKernel3-flashable.zip
-
-      - name: Upload kernel Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-image
-          path: out/arch/arm64/boot/Image
+          export KERNEL_DIR=$(pwd)/aosp-tools
+          export OUT_DIR=$(pwd)/out
+          export PATH="$KERNEL_DIR/platform-tools:$KERNEL_DIR/out/host/linux-x86/bin:/usr/bin:$PATH"
+          export DTC_EXT=dtc
+          export PATH="$KERNEL_DIR/clang-r450784d/bin:$PATH"
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export CROSS_COMPILE="$KERNEL_DIR/aarch64-linux-android-4.9/bin/aarch64-linux-android-"
+          export CROSS_COMPILE_ARM32="$KERNEL_DIR/arm-linux-androideabi-4
