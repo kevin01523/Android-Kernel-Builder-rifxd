@@ -34,10 +34,10 @@ jobs:
             libtfm-dev \
             libfl-dev \
             libncurses-dev \
-            libncursesw5 \
             libncurses6 \
+            libncursesw6 \
             python3 \
-            python3-distutils \
+            python3-venv \
             rsync \
             unzip \
             wget \
