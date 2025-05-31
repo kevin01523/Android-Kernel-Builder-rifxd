@@ -41,12 +41,14 @@ jobs:
 
       - name: Download Clang and GCC toolchains
         run: |
-          mkdir -p ~/toolchains
+          mkdir -p /home/runner/toolchains/clang
           wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz -O clang.tar.gz
-          tar -xzf clang.tar.gz -C ~/toolchains
+          tar -xzf clang.tar.gz -C /home/runner/toolchains/clang --strip-components=1
+          mkdir -p /home/runner/toolchains/gcc
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
-          mkdir -p ~/toolchains/gcc
-          tar -xzf gcc.tar.gz -C ~/toolchains/gcc
+          tar -xzf gcc.tar.gz -C /home/runner/toolchains/gcc --strip-components=1
+          ls -l /home/runner/toolchains/clang/bin || true
+          ls -l /home/runner/toolchains/gcc/bin || true
 
       - name: Clone and Build Kernel
         shell: bash
@@ -55,18 +57,25 @@ jobs:
           SUBARCH: arm64
           CLANG_TRIPLE: aarch64-linux-gnu-
           CROSS_COMPILE: /home/runner/toolchains/gcc/bin/aarch64-linux-android-
-          CC: /home/runner/toolchains/bin/clang
-          PATH: /home/runner/toolchains/bin:/home/runner/toolchains/gcc/bin:$PATH
+          CC: /home/runner/toolchains/clang/bin/clang
+          PATH: /home/runner/toolchains/clang/bin:/home/runner/toolchains/gcc/bin:$PATH
         run: |
           # Clone kernel if not already present
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
           fi
+
+          echo "Verifying required binaries..."
+          command -v make || { echo "make not found!"; exit 127; }
+          command -v clang || { echo "clang not found!"; exit 127; }
+          command -v aarch64-linux-android-gcc || { echo "gcc not found!"; exit 127; }
+
           ls -l
           if [ ! -d kernel ]; then
             echo "ERROR: kernel directory does not exist!"
             exit 1
           fi
+
           cd kernel
           echo "Current directory: $(pwd)"
           which make
