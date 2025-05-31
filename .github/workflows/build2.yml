@@ -24,13 +24,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             make \
+            build-essential \
             bc \
             bison \
             flex \
             libssl-dev \
             libncurses5-dev \
             ccache \
-            build-essential \
             dwarves \
             libelf-dev \
             git \
@@ -38,6 +38,10 @@ jobs:
             curl \
             python3 \
             zip
+          echo "Checking make availability and PATH:"
+          echo "$PATH"
+          which make
+          make --version
 
       - name: Download Clang and GCC toolchains
         run: |
@@ -47,6 +51,12 @@ jobs:
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
           mkdir -p ~/toolchains/gcc
           tar -xzf gcc.tar.gz -C ~/toolchains/gcc
+
+      - name: Check make and PATH before build
+        run: |
+          echo "PATH is: $PATH"
+          which make
+          make --version
 
       - name: Build kernel
         env:
