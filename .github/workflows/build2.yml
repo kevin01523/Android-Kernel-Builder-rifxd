@@ -41,8 +41,14 @@ jobs:
           export SUBARCH=arm64
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=/home/runner/toolchains/gcc/bin/aarch64-linux-android-
+          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export CC=/home/runner/toolchains/clang/bin/clang
           export PATH=/home/runner/toolchains/clang/bin:/home/runner/toolchains/gcc/bin:$PATH
+
+          # Symlink linker for Android GCC toolchain if missing (workaround)
+          if [ ! -f /home/runner/toolchains/gcc/bin/aarch64-linux-android-ld ]; then
+            ln -sf /home/runner/toolchains/clang/bin/ld.lld /home/runner/toolchains/gcc/bin/aarch64-linux-android-ld
+          fi
 
           echo "Listing GCC toolchain binaries:"
           ls -l /home/runner/toolchains/gcc/bin || echo "No bin directory found"
@@ -66,6 +72,7 @@ jobs:
             CC=clang \
             CROSS_COMPILE=aarch64-linux-android- \
             CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
             LLVM=1
           cd ..
 
