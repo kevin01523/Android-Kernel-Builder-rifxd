@@ -15,10 +15,6 @@ jobs:
       - name: Checkout your repo
         uses: actions/checkout@v4
 
-      - name: Clone Sunfish Kernel Source
-        run: |
-          git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
-
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -52,14 +48,7 @@ jobs:
           mkdir -p ~/toolchains/gcc
           tar -xzf gcc.tar.gz -C ~/toolchains/gcc
 
-      - name: Check make and PATH before build
-        shell: bash
-        run: |
-          echo "PATH is: $PATH"
-          which make
-          make --version
-
-      - name: Build kernel
+      - name: Clone and Build Kernel
         shell: bash
         env:
           ARCH: arm64
@@ -69,7 +58,17 @@ jobs:
           CC: /home/runner/toolchains/bin/clang
           PATH: /home/runner/toolchains/bin:/home/runner/toolchains/gcc/bin:$PATH
         run: |
+          # Clone kernel if not already present
+          if [ ! -d kernel ]; then
+            git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+          fi
+          ls -l
+          if [ ! -d kernel ]; then
+            echo "ERROR: kernel directory does not exist!"
+            exit 1
+          fi
           cd kernel
+          echo "Current directory: $(pwd)"
           which make
           make --version
           make O=../out ARCH=arm64 sunfish_defconfig
