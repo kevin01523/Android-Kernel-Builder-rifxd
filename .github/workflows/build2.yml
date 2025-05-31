@@ -57,12 +57,6 @@ jobs:
           mkdir -p aosp-tools
           cd aosp-tools
 
-          echo "Downloading official Android 13 clang (r450784d, android13-qpr3-s9-release)..."
-          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android13-qpr3-s9-release/clang-r450784d.tar.gz
-          echo "Extracting clang..."
-          mkdir clang-r450784d
-          tar -xzf clang-r450784d.tar.gz -C clang-r450784d
-
           echo "Downloading AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)..."
           wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
           echo "Extracting aarch64 GCC..."
@@ -104,6 +98,19 @@ jobs:
           sudo swapon /swapfile
           free -h
 
+      - name: Download and set up Neutron Clang (Antman)
+        run: |
+          mkdir -p toolchains/neutron-clang
+          cd toolchains/neutron-clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod +x antman
+          ./antman -S=05012024
+          cd ../../
+
+      - name: Export Neutron Clang to PATH
+        run: |
+          echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
+
       - name: Build Kernel
         run: |
           set -e
@@ -112,10 +119,10 @@ jobs:
           export KERNEL_DIR="${PWD}/aosp-tools"
           export OUT_DIR="${PWD}/out"
 
-          export PATH="${KERNEL_DIR}/clang-r450784d/bin:${PATH}"
+          export PATH="${PWD}/toolchains/neutron-clang/bin:${PATH}"
           export PATH="${KERNEL_DIR}/aarch64-linux-android-4.9/bin:${PATH}"
           export PATH="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin:${PATH}"
-          export LD_LIBRARY_PATH="${KERNEL_DIR}/clang-r450784d/lib64:${LD_LIBRARY_PATH}"
+          export LD_LIBRARY_PATH="${PWD}/toolchains/neutron-clang/lib:${LD_LIBRARY_PATH}"
 
           export LD=ld.lld
 
