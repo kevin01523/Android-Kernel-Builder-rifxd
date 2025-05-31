@@ -62,12 +62,13 @@ jobs:
           mkdir clang-r450784d
           tar -xzf clang-r450784d.tar.gz -C clang-r450784d
 
-          # Download official AOSP GCC 4.9 for aarch64 and arm
-          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/tags/android-13.0.0_r13.tar.gz -O aarch64-linux-android-4.9.tar.gz
+          # Download specific AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
           mkdir aarch64-linux-android-4.9
           tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
 
-          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/refs/tags/android-13.0.0_r13.tar.gz -O arm-linux-androideabi-4.9.tar.gz
+          # Download specific AOSP GCC 4.9 for arm (commit b0c6a654327ca8796bed1e61dffcf523d04dceaa)
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/b0c6a654327ca8796bed1e61dffcf523d04dceaa.tar.gz -O arm-linux-androideabi-4.9.tar.gz
           mkdir arm-linux-androideabi-4.9
           tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
 
@@ -103,14 +104,7 @@ jobs:
 
       - name: Clone AnyKernel3
         run: |
-          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
-
-      - name: Copy kernel Image to AnyKernel3
-        run: |
-          cp out/arch/arm64/boot/Image AnyKernel3/
-
-      - name: Create AnyKernel3 flashable zip
-        run: |
+          git clone --depth=1 https://github.com/osm: |
           cd AnyKernel3
           zip -r9 ../AnyKernel3-flashable.zip ./*
           cd ..
