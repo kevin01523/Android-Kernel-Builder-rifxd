@@ -57,20 +57,25 @@ jobs:
           mkdir -p aosp-tools
           cd aosp-tools
 
-          # Download official Android 13 clang (r450784d)
+          echo "Downloading official Android 13 clang (r450784d)..."
           wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz
+          echo "Extracting clang..."
           mkdir clang-r450784d
           tar -xzf clang-r450784d.tar.gz -C clang-r450784d
 
-          # Download specific AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)
+          echo "Downloading AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)..."
           wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
+          echo "Extracting aarch64 GCC..."
           mkdir aarch64-linux-android-4.9
           tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
 
-          # Download specific AOSP GCC 4.9 for arm (commit b0c6a654327ca8796bed1e61dffcf523d04dceaa)
+          echo "Downloading AOSP GCC 4.9 for arm (commit b0c6a654327ca8796bed1e61dffcf523d04dceaa)..."
           wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/b0c6a654327ca8796bed1e61dffcf523d04dceaa.tar.gz -O arm-linux-androideabi-4.9.tar.gz
+          echo "Extracting arm GCC..."
           mkdir arm-linux-androideabi-4.9
           tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
+
+          echo "Toolchain downloads and extraction complete."
 
           cd ..
 
@@ -82,22 +87,28 @@ jobs:
           export KERNEL_DIR=$(pwd)/aosp-tools
           export OUT_DIR=$(pwd)/out
 
-          # Prepend both toolchains' bin directories to PATH so their binutils are found first
-          export PATH="$KERNEL_DIR/aarch64-linux-android-4.9/bin:$KERNEL_DIR/arm-linux-androideabi-4.9/bin:$KERNEL_DIR/clang-r450784d/bin:/usr/bin:$PATH"
+          # Add toolchain bins to PATH so 'aarch64-linux-gnu-*' and 'arm-linux-gnueabi-*' point to the downloaded GCCs
+          export PATH="$KERNEL_DIR/aarch64-linux-android-4.9/bin:$KERNEL_DIR/arm-linux-androideabi-4.9/bin:$KERNEL_DIR/clang-r450784d/bin:$PATH"
 
-          # Always use toolchain-provided as/ld for both 64-bit and 32-bit
-          export AS="$KERNEL_DIR/aarch64-linux-android-4.9/bin/aarch64-linux-android-as"
-          export LD="$KERNEL_DIR/aarch64-linux-android-4.9/bin/aarch64-linux-android-ld"
-          export AS_ARM32="$KERNEL_DIR/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-as"
-          export LD_ARM32="$KERNEL_DIR/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-ld"
+          # Symlink aarch64-linux-gnu-* and arm-linux-gnueabi-* to Android toolchain binaries if they don't exist
+          cd $KERNEL_DIR/aarch64-linux-android-4.9/bin
+          for bin in aarch64-linux-android-*; do
+            base=$(echo $bin | sed 's/aarch64-linux-android-/aarch64-linux-gnu-/')
+            [ -e "$base" ] || ln -s "$bin" "$base"
+          done
+          cd -
 
-          export DTC_EXT=dtc
-          export CLANG_TRIPLE=aarch64-linux-gnu-
-          export CROSS_COMPILE="$KERNEL_DIR/aarch64-linux-android-4.9/bin/aarch64-linux-android-"
-          export CROSS_COMPILE_ARM32="$KERNEL_DIR/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-"
+          cd $KERNEL_DIR/arm-linux-androideabi-4.9/bin
+          for bin in arm-linux-androideabi-*; do
+            base=$(echo $bin | sed 's/arm-linux-androideabi-/arm-linux-gnueabi-/')
+            [ -e "$base" ] || ln -s "$bin" "$base"
+          done
+          cd -
+
           export LD_LIBRARY_PATH="$KERNEL_DIR/clang-r450784d/lib64:$LD_LIBRARY_PATH"
 
           DEFCONFIG="sunfish_defconfig"
+          config_path=$DEFCONFIG
 
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
@@ -106,17 +117,10 @@ jobs:
           cd kernel
 
           # Defconfig step
-          make O=$OUT_DIR CC=clang ARCH=arm64 $DEFCONFIG
+          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 "$config_path" O=../out
 
-          # Main build step, force assembler and linker to toolchain versions
-          make ARCH=arm64 \
-            O=$OUT_DIR \
-            CC=clang \
-            LD=ld.lld \
-            NM=llvm-nm \
-            OBJCOPY=llvm-objcopy \
-            AS="$AS" \
-            LD="$LD"
+          # Main build step
+          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 O=../out
 
           cd ..
 
