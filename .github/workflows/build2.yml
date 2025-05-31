@@ -106,9 +106,10 @@ jobs:
           cd -
 
           export LD_LIBRARY_PATH="$KERNEL_DIR/clang-r450784d/lib64:$LD_LIBRARY_PATH"
-
+          
+          # Use sunfish defconfig
+          export LD=ld.lld
           DEFCONFIG="sunfish_defconfig"
-          config_path=$DEFCONFIG
 
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
@@ -116,11 +117,11 @@ jobs:
 
           cd kernel
 
-          # Defconfig step
-          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 "$config_path" O=../out
+          # Defconfig step (O=../out for consistency)
+          make O=../out CC=clang ARCH=arm64 $DEFCONFIG
 
-          # Main build step
-          make ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 O=../out
+          # Main build step with sunfish, explicit LD and LLVM tools
+          make ARCH=arm64 CC=clang LD=ld.lld NM=llvm-nm OBJCOPY=llvm-objcopy O=../out
 
           cd ..
 
