@@ -57,8 +57,8 @@ jobs:
           mkdir -p aosp-tools
           cd aosp-tools
 
-          echo "Downloading official Android 13 clang (r450784d)..."
-          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz
+          echo "Downloading official Android 13 clang (r450784d, android13-qpr3-s9-release)..."
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android13-qpr3-s9-release/clang-r450784d.tar.gz
           echo "Extracting clang..."
           mkdir clang-r450784d
           tar -xzf clang-r450784d.tar.gz -C clang-r450784d
