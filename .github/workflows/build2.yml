@@ -1,4 +1,4 @@
-name: Build Android Kernel (Default Android Toolchains)
+name: Build Android Kernel (LineageOS GCC Toolchains)
 
 on:
   workflow_dispatch:
@@ -18,35 +18,47 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential bc curl git zip ftp gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev lftp zstd wget libfl-dev python3 libarchive-tools llvm-14-linker-tools
+          sudo apt-get install -y build-essential bc curl git zip ftp gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev lftp zstd wget libfl-dev python3 libarchive-tools llvm-14-linker-tools unzip
 
-      - name: Download Android default Clang and GCC toolchains
+      - name: Download and extract AARCH64 GCC toolchain
         run: |
-          set -e
-          mkdir -p /home/runner/toolchains/clang
-          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz -O clang.tar.gz
-          tar -xzf clang.tar.gz -C /home/runner/toolchains/clang --strip-components=1
-          mkdir -p /home/runner/toolchains/gcc
-          wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
-          echo "Contents of GCC archive:"
-          tar -tzf gcc.tar.gz | head -30
-          tar -xzf gcc.tar.gz -C /home/runner/toolchains/gcc
-          echo "After extraction, contents of GCC toolchain:"
-          ls -l /home/runner/toolchains/gcc
-          ls -l /home/runner/toolchains/gcc/bin || echo "No bin directory found"
+          AARCH64_GCC_HASH=5e030eafe024784a73cdf47e6936ac0dbfc763dc
+          AARCH64_GCC_URL=https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/archive/${AARCH64_GCC_HASH}.zip
+          mkdir -p toolchains/aarch64
+          wget -O aarch64-gcc.zip "$AARCH64_GCC_URL"
+          unzip -q aarch64-gcc.zip -d toolchains/aarch64
+          # Symlink for convenience
+          ln -s $(find toolchains/aarch64 -type d -name 'bin') toolchains/aarch64/bin
+
+      - name: Download and extract ARM GCC toolchain
+        run: |
+          ARM_GCC_HASH=111258a10e017f067b27e6cfcea7619d753f3309
+          ARM_GCC_URL=https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9/archive/${ARM_GCC_HASH}.zip
+          mkdir -p toolchains/arm
+          wget -O arm-gcc.zip "$ARM_GCC_URL"
+          unzip -q arm-gcc.zip -d toolchains/arm
+          # Symlink for convenience
+          ln -s $(find toolchains/arm -type d -name 'bin') toolchains/arm/bin
 
       - name: Clone and Build Kernel
         run: |
+          # Find the actual bin directories created by the extraction
+          export AARCH64_BIN=$(find $(pwd)/toolchains/aarch64 -type d -name 'bin' | head -n1)
+          export ARM_BIN=$(find $(pwd)/toolchains/arm -type d -name 'bin' | head -n1)
           export ARCH=arm64
           export SUBARCH=arm64
           export CLANG_TRIPLE=aarch64-linux-gnu-
-          export CROSS_COMPILE=/home/runner/toolchains/gcc/bin/aarch64-linux-android-
-          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-          export CC=/home/runner/toolchains/clang/bin/clang
-          export PATH=/home/runner/toolchains/clang/bin:/home/runner/toolchains/gcc/bin:$PATH
+          export CROSS_COMPILE=${AARCH64_BIN}/aarch64-linux-android-
+          export CROSS_COMPILE_ARM32=${ARM_BIN}/arm-linux-androideabi-
+          export CC=clang
+          export PATH=${AARCH64_BIN}:${ARM_BIN}:/usr/bin:$PATH
 
-          echo "Listing GCC toolchain binaries:"
-          ls -l /home/runner/toolchains/gcc/bin || echo "No bin directory found"
+          echo "AARCH64_BIN: $AARCH64_BIN"
+          echo "ARM_BIN: $ARM_BIN"
+          echo "Listing aarch64 toolchain binaries:"
+          ls -l $AARCH64_BIN
+          echo "Listing arm toolchain binaries:"
+          ls -l $ARM_BIN
 
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
@@ -65,9 +77,9 @@ jobs:
           make O=../out ARCH=arm64 sunfish_defconfig
           make -j$(nproc) O=../out ARCH=arm64 \
             CC=clang \
-            CROSS_COMPILE=aarch64-linux-android- \
+            CROSS_COMPILE=${CROSS_COMPILE} \
             CLANG_TRIPLE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+            CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
             LLVM=1
           cd ..
 
