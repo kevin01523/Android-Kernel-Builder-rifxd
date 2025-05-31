@@ -96,6 +96,14 @@ jobs:
           done
           cd -
 
+      - name: Add swap space
+        run: |
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       - name: Build Kernel
         run: |
           set -e
@@ -123,7 +131,7 @@ jobs:
           cd kernel
 
           # Defconfig step
-          make O=${OUT_DIR} \
+          make -j2 O=${OUT_DIR} \
             CC=clang \
             ARCH=arm64 \
             CROSS_COMPILE=${CROSS_COMPILE} \
@@ -133,7 +141,7 @@ jobs:
             ${DEFCONFIG}
 
           # Build step
-          make O=${OUT_DIR} \
+          make -j2 O=${OUT_DIR} \
             CC=clang \
             ARCH=arm64 \
             CROSS_COMPILE=${CROSS_COMPILE} \
