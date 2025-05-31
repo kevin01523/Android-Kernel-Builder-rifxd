@@ -62,21 +62,6 @@ jobs:
           echo "Listing GCC toolchain binaries:"
           ls -l /home/runner/toolchains/gcc/bin || echo "No bin directory found"
 
-          echo "Verifying build tools..."
-          command -v make || { echo "make not found!"; exit 127; }
-          command -v clang || { echo "clang not found!"; exit 127; }
-          # GCC toolchain check (fix)
-          if [ -x /home/runner/toolchains/gcc/bin/aarch64-linux-android-gcc ]; then
-            echo "aarch64-linux-android-gcc found in bin directory!"
-          elif command -v aarch64-linux-android-gcc >/dev/null 2>&1; then
-            echo "aarch64-linux-android-gcc found in PATH!"
-          else
-            echo "aarch64-linux-android-gcc not found! Checking bin directory for similar files..."
-            ls -l /home/runner/toolchains/gcc/bin/ || true
-            echo "GCC not found or not in PATH!"; exit 127;
-          fi
-          command -v git || { echo "git not found!"; exit 127; }
-
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
           fi
