@@ -60,4 +60,39 @@ jobs:
           export PATH=$CLANG_BIN:$PATH
 
           if [ ! -d kernel ]; then
-            git clone --depth=1 --branch android
+            git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+          fi
+
+          cd kernel
+          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 sunfish_defconfig O=../out
+
+          echo "Compilation started..."
+          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 O=../out
+
+          cd ..
+
+      - name: Clone AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+
+      - name: Copy kernel Image to AnyKernel3
+        run: |
+          cp out/arch/arm64/boot/Image AnyKernel3/
+
+      - name: Create AnyKernel3 flashable zip
+        run: |
+          cd AnyKernel3
+          zip -r9 ../AnyKernel3-flashable.zip ./*
+          cd ..
+
+      - name: Upload AnyKernel3 flashable zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnyKernel3-flashable
+          path: AnyKernel3-flashable.zip
+
+      - name: Upload kernel Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image
+          path: out/arch/arm64/boot/Image
