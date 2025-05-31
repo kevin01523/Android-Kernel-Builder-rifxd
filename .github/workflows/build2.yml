@@ -76,7 +76,6 @@ jobs:
           tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
 
           echo "Toolchain downloads and extraction complete."
-
           cd ..
 
       - name: Build Kernel
@@ -106,8 +105,6 @@ jobs:
           cd -
 
           export LD_LIBRARY_PATH="$KERNEL_DIR/clang-r450784d/lib64:$LD_LIBRARY_PATH"
-          
-          # Use sunfish defconfig
           export LD=ld.lld
           DEFCONFIG="sunfish_defconfig"
 
@@ -117,11 +114,27 @@ jobs:
 
           cd kernel
 
-          # Defconfig step (O=../out for consistency)
-          make O=../out CC=clang ARCH=arm64 $DEFCONFIG
+          # Defconfig step with all required variables
+          make O=../out \
+            CC=clang \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            $DEFCONFIG
 
-          # Main build step with sunfish, explicit LD and LLVM tools
-          make ARCH=arm64 CC=clang LD=ld.lld NM=llvm-nm OBJCOPY=llvm-objcopy O=../out
+          # Main build step with all required variables
+          make O=../out \
+            CC=clang \
+            ARCH=arm64 \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            LD=ld.lld \
+            NM=llvm-nm \
+            OBJCOPY=llvm-objcopy
 
           cd ..
 
