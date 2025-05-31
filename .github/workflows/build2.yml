@@ -53,21 +53,25 @@ jobs:
           tar -xzf gcc.tar.gz -C ~/toolchains/gcc
 
       - name: Check make and PATH before build
+        shell: bash
         run: |
           echo "PATH is: $PATH"
           which make
           make --version
 
       - name: Build kernel
+        shell: bash
         env:
           ARCH: arm64
           SUBARCH: arm64
           CLANG_TRIPLE: aarch64-linux-gnu-
-          CROSS_COMPILE: ~/toolchains/gcc/bin/aarch64-linux-android-
-          CC: ~/toolchains/bin/clang
-          PATH: ~/toolchains/bin:~/toolchains/gcc/bin:$PATH
+          CROSS_COMPILE: /home/runner/toolchains/gcc/bin/aarch64-linux-android-
+          CC: /home/runner/toolchains/bin/clang
+          PATH: /home/runner/toolchains/bin:/home/runner/toolchains/gcc/bin:$PATH
         run: |
           cd kernel
+          which make
+          make --version
           make O=../out ARCH=arm64 sunfish_defconfig
           make -j$(nproc) O=../out ARCH=arm64 \
             CC=clang \
