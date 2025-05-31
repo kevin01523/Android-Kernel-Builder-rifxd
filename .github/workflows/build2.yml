@@ -29,7 +29,6 @@ jobs:
           mkdir -p ~/toolchains
           wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz -O clang.tar.gz
           tar -xzf clang.tar.gz -C ~/toolchains
-          mv ~/toolchains/clang-r450784d ~/toolchains/clang
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
           mkdir -p ~/toolchains/gcc
           tar -xzf gcc.tar.gz -C ~/toolchains/gcc
@@ -40,8 +39,8 @@ jobs:
           SUBARCH: arm64
           CLANG_TRIPLE: aarch64-linux-gnu-
           CROSS_COMPILE: ~/toolchains/gcc/bin/aarch64-linux-android-
-          CC: ~/toolchains/clang/bin/clang
-          PATH: ~/toolchains/clang/bin:~/toolchains/gcc/bin:$PATH
+          CC: ~/toolchains/bin/clang
+          PATH: ~/toolchains/bin:~/toolchains/gcc/bin:$PATH
         run: |
           cd kernel
           make O=../out ARCH=arm64 sunfish_defconfig
