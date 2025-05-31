@@ -1,0 +1,177 @@
+name: Android Kernel Build (Kirisakura Style Exports, Sunfish)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            bc \
+            bison \
+            curl \
+            ca-certificates \
+            cpio \
+            flex \
+            git \
+            lz4 \
+            libarchive-tools \
+            libelf-dev \
+            libssl-dev \
+            libtfm-dev \
+            libfl-dev \
+            libncurses-dev \
+            libncurses6 \
+            libncursesw6 \
+            python3 \
+            python3-venv \
+            rsync \
+            unzip \
+            wget \
+            zip \
+            zstd \
+            gcc-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabi \
+            binutils-arm-linux-gnueabihf \
+            lftp \
+            ftp \
+            pigz \
+            device-tree-compiler
+
+      - name: Download AOSP toolchains (Android 13)
+        run: |
+          set -e
+          mkdir -p aosp-tools
+          cd aosp-tools
+
+          # Download clang
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android13-qpr3-s9-release/clang-r450784d.tar.gz
+          mkdir clang-r450784d
+          tar -xzf clang-r450784d.tar.gz -C clang-r450784d
+
+          # Download AOSP GCC 4.9 for aarch64
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
+          mkdir aarch64-linux-android-4.9
+          tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
+
+          # Download AOSP GCC 4.9 for arm
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/b0c6a654327ca8796bed1e61dffcf523d04dceaa.tar.gz -O arm-linux-androideabi-4.9.tar.gz
+          mkdir arm-linux-androideabi-4.9
+          tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
+
+          cd ..
+
+      - name: Prepare toolchain PATH and symlinks
+        run: |
+          set -e
+          export KERNEL_DIR="${PWD}/aosp-tools"
+          # Add toolchain bins to PATH for easy access
+          export PATH="${KERNEL_DIR}/clang-r450784d/bin:${PATH}"
+          export PATH="${KERNEL_DIR}/aarch64-linux-android-4.9/bin:${PATH}"
+          export PATH="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin:${PATH}"
+
+          # Symlink aarch64-linux-gnu-* and arm-linux-gnueabi-* to Android toolchain binaries if they don't exist
+          cd $KERNEL_DIR/aarch64-linux-android-4.9/bin
+          for bin in aarch64-linux-android-*; do
+            base=$(echo $bin | sed 's/aarch64-linux-android-/aarch64-linux-gnu-/')
+            [ -e "$base" ] || ln -s "$bin" "$base"
+          done
+          cd -
+
+          cd $KERNEL_DIR/arm-linux-androideabi-4.9/bin
+          for bin in arm-linux-androideabi-*; do
+            base=$(echo $bin | sed 's/arm-linux-androideabi-/arm-linux-gnueabi-/')
+            [ -e "$base" ] || ln -s "$bin" "$base"
+          done
+          cd -
+
+      - name: Build Kernel (Kirisakura style exports)
+        run: |
+          set -e
+          rm -rf out
+
+          export KERNEL_DIR="${PWD}/aosp-tools"
+          export OUT_DIR="${PWD}/out"
+
+          # Exports following build_kirisakura.sh, but for CI
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CLANG_PATH="${KERNEL_DIR}/clang-r450784d/bin"
+          export PATH="${CLANG_PATH}:${PATH}"
+          # DTC_EXT can be set here if you have a custom dtc binary, else omit or use the system default
+          # export DTC_EXT="${KERNEL_DIR}/path-to-your-dtc"   # Uncomment and set if needed
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export CROSS_COMPILE="${KERNEL_DIR}/aarch64-linux-android-4.9/bin/aarch64-linux-gnu-"
+          export CROSS_COMPILE_ARM32="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin/arm-linux-gnueabi-"
+          export LD_LIBRARY_PATH="${KERNEL_DIR}/clang-r450784d/lib64:${LD_LIBRARY_PATH}"
+
+          export LD=ld.lld
+
+          DEFCONFIG="sunfish_defconfig"
+
+          # Clone kernel source if not present
+          if [ ! -d kernel ]; then
+            git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+          fi
+
+          cd kernel
+
+          # Defconfig step (using Kirisakura exports)
+          make O=${OUT_DIR} \
+            CC=clang \
+            AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
+            ARCH=${ARCH} SUBARCH=${SUBARCH} \
+            CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
+            LLVM=1 LLVM_IAS=1 \
+            ${DEFCONFIG}
+
+          # Build step (using Kirisakura exports)
+          make O=${OUT_DIR} \
+            CC=clang \
+            AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip \
+            ARCH=${ARCH} SUBARCH=${SUBARCH} \
+            CROSS_COMPILE=${CROSS_COMPILE} CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
+            LLVM=1 LLVM_IAS=1 \
+            LD=${LD} \
+            -j$(nproc)
+
+          cd ..
+
+      - name: Clone AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
+
+      - name: Copy kernel Image to AnyKernel3
+        run: |
+          cp out/arch/arm64/boot/Image AnyKernel3/
+
+      - name: Create AnyKernel3 flashable zip
+        run: |
+          cd AnyKernel3
+          zip -r9 ../AnyKernel3-flashable.zip ./*
+          cd ..
+
+      - name: Upload AnyKernel3 flashable zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnyKernel3-flashable
+          path: AnyKernel3-flashable.zip
+
+      - name: Upload kernel Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image
+          path: out/arch/arm64/boot/Image
