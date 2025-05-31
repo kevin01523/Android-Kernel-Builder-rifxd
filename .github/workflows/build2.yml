@@ -37,15 +37,18 @@ jobs:
 
       - name: Download Android default Clang and GCC toolchains
         run: |
+          set -e
           mkdir -p /home/runner/toolchains/clang
           wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz -O clang.tar.gz
           tar -xzf clang.tar.gz -C /home/runner/toolchains/clang --strip-components=1
           mkdir -p /home/runner/toolchains/gcc
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
-          tar -xzf gcc.tar.gz -C /home/runner/toolchains/gcc --strip-components=1
-          echo "Toolchain directories:"
-          ls -l /home/runner/toolchains/clang/bin || true
-          ls -l /home/runner/toolchains/gcc/bin || true
+          echo "Contents of GCC archive:"
+          tar -tzf gcc.tar.gz | head -30
+          tar -xzf gcc.tar.gz -C /home/runner/toolchains/gcc
+          echo "After extraction, contents of GCC toolchain:"
+          ls -l /home/runner/toolchains/gcc
+          ls -l /home/runner/toolchains/gcc/bin || echo "No bin directory found"
 
       - name: Clone and Build Kernel
         run: |
@@ -57,17 +60,19 @@ jobs:
           export PATH=/home/runner/toolchains/clang/bin:/home/runner/toolchains/gcc/bin:$PATH
 
           echo "Listing GCC toolchain binaries:"
-          ls -l /home/runner/toolchains/gcc/bin
+          ls -l /home/runner/toolchains/gcc/bin || echo "No bin directory found"
 
           echo "Verifying build tools..."
           command -v make || { echo "make not found!"; exit 127; }
           command -v clang || { echo "clang not found!"; exit 127; }
           # GCC toolchain check (fix)
-          if command -v aarch64-linux-android-gcc >/dev/null 2>&1; then
-            echo "aarch64-linux-android-gcc found!"
+          if [ -x /home/runner/toolchains/gcc/bin/aarch64-linux-android-gcc ]; then
+            echo "aarch64-linux-android-gcc found in bin directory!"
+          elif command -v aarch64-linux-android-gcc >/dev/null 2>&1; then
+            echo "aarch64-linux-android-gcc found in PATH!"
           else
             echo "aarch64-linux-android-gcc not found! Checking bin directory for similar files..."
-            ls -l /home/runner/toolchains/gcc/bin/aarch64-linux-android-gcc* || true
+            ls -l /home/runner/toolchains/gcc/bin/ || true
             echo "GCC not found or not in PATH!"; exit 127;
           fi
           command -v git || { echo "git not found!"; exit 127; }
