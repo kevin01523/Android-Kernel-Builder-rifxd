@@ -34,10 +34,12 @@ jobs:
             curl \
             python3 \
             zip
-          echo "Checking make availability and PATH:"
+          echo "Checking make and git availability and PATH:"
           echo "$PATH"
           which make
           make --version
+          which git
+          git --version
 
       - name: Download Clang and GCC toolchains
         run: |
@@ -47,6 +49,7 @@ jobs:
           mkdir -p /home/runner/toolchains/gcc
           wget https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/master.tar.gz -O gcc.tar.gz
           tar -xzf gcc.tar.gz -C /home/runner/toolchains/gcc --strip-components=1
+          echo "Toolchain directories:"
           ls -l /home/runner/toolchains/clang/bin || true
           ls -l /home/runner/toolchains/gcc/bin || true
 
@@ -65,10 +68,11 @@ jobs:
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
           fi
 
-          echo "Verifying required binaries..."
+          echo "Verifying build tools..."
           command -v make || { echo "make not found!"; exit 127; }
           command -v clang || { echo "clang not found!"; exit 127; }
           command -v aarch64-linux-android-gcc || { echo "gcc not found!"; exit 127; }
+          command -v git || { echo "git not found!"; exit 127; }
 
           ls -l
           if [ ! -d kernel ]; then
