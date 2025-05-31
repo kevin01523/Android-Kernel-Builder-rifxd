@@ -1,4 +1,4 @@
-name: Build Android Kernel (Android/LineageOS Toolchains)
+name: Build Android Kernel (Android Official Clang Only)
 
 on:
   workflow_dispatch:
@@ -20,87 +20,26 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential bc curl git zip ftp gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi libssl-dev lftp zstd wget libfl-dev python3 libarchive-tools llvm-14-linker-tools unzip
 
-      - name: Download and extract toolchains/prebuilts
+      - name: Download and extract Android Clang toolchain
         run: |
           set -eu
-
-          # aarch64 gcc
-          AARCH64_GCC_HASH=5e030eafe024784a73cdf47e6936ac0dbfc763dc
-          AARCH64_GCC_URL=https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/archive/${AARCH64_GCC_HASH}.zip
-          # arm gcc
-          ARM_GCC_HASH=111258a10e017f067b27e6cfcea7619d753f3309
-          ARM_GCC_URL=https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9/archive/${ARM_GCC_HASH}.zip
-          # prebuilts toolchain
-          PREBUILTS_HASH=f61cfbcb609173e1040753a2b9e8fbe8517343f9
-          PREBUILTS_URL=https://github.com/LineageOS/android_prebuilts_build-tools/archive/${PREBUILTS_HASH}.zip
-          # Android Clang (official, Android 13)
           ANDROID_CLANG_URL=https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz
-
-          DOWNLOADER() {
-            local __download_url=$1
-            local __download_name=$2
-            wget -c -N -q -O "${__download_name}" "${__download_url}"
-          }
-
-          # aarch64 GCC
-          if [ ! -d "./android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9-${AARCH64_GCC_HASH}/bin" ]; then
-            echo "aarch gcc is not installed, installing it"
-            DOWNLOADER "$AARCH64_GCC_URL" aarch64_gcc-"$AARCH64_GCC_HASH".zip
-            unzip -q aarch64_gcc-"$AARCH64_GCC_HASH".zip
-          fi
-
-          # arm GCC
-          if [ ! -d "./android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9-${ARM_GCC_HASH}/bin" ]; then
-            echo "arm gcc is not installed, installing it"
-            DOWNLOADER "$ARM_GCC_URL" arm_gcc-"$ARM_GCC_HASH".zip
-            unzip -q arm_gcc-"$ARM_GCC_HASH".zip
-          fi
-
-          # prebuilts toolchain (build-tools, host binaries)
-          if [ ! -d "./android_prebuilts_build-tools-${PREBUILTS_HASH}/linux-x86/bin/" ]; then
-            echo "prebuilts/clang is not installed, installing it"
-            DOWNLOADER "$PREBUILTS_URL" prebuilts-"$PREBUILTS_HASH".zip
-            unzip -q prebuilts-"$PREBUILTS_HASH".zip
-          fi
-
-          # Android Clang toolchain
           if [ ! -d "./clang-android-r450784d/bin" ]; then
             echo "Android clang is not installed, installing it"
             mkdir -p clang-android-r450784d
-            DOWNLOADER "$ANDROID_CLANG_URL" clang-android-r450784d.tar.gz
+            wget -q -O clang-android-r450784d.tar.gz "$ANDROID_CLANG_URL"
             tar -xzf clang-android-r450784d.tar.gz -C clang-android-r450784d
           fi
 
       - name: Build Kernel
         run: |
           set -e
-
-          # Find actual bin directories
-          export AARCH64_BIN=$(find $(pwd)/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9-* -type d -name 'bin' | head -n1)
-          export ARM_BIN=$(find $(pwd)/android_prebuilts_gcc_linux-x86_arm_arm-linux-androideabi-4.9-* -type d -name 'bin' | head -n1)
-          export PREBUILT_BIN=$(find $(pwd)/android_prebuilts_build-tools-* -type d -path '*/linux-x86/bin' | head -n1)
           export CLANG_BIN=$(pwd)/clang-android-r450784d/bin
-
           export ARCH=arm64
           export SUBARCH=arm64
-
-          export CROSS_COMPILE=$AARCH64_BIN/aarch64-linux-android-
-          export CROSS_COMPILE_ARM32=$ARM_BIN/arm-linux-androideabi-
           export CC=$CLANG_BIN/clang
-          export PATH=$CLANG_BIN:$PREBUILT_BIN:$AARCH64_BIN:$ARM_BIN:$PATH
-
-          echo "AARCH64_BIN: $AARCH64_BIN"
-          echo "ARM_BIN: $ARM_BIN"
-          echo "PREBUILT_BIN: $PREBUILT_BIN"
-          echo "CLANG_BIN: $CLANG_BIN"
-          echo "Listing aarch64 toolchain binaries:"
-          ls -l $AARCH64_BIN
-          echo "Listing arm toolchain binaries:"
-          ls -l $ARM_BIN
-          echo "Listing prebuilt toolchain binaries:"
-          ls -l $PREBUILT_BIN
-          echo "Listing clang toolchain binaries:"
-          ls -l $CLANG_BIN
+          export PATH=$CLANG_BIN:$PATH
+          # System cross-compilers from apt will be used automatically by clang if configured in kernel Makefile
 
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
@@ -110,8 +49,6 @@ jobs:
           make O=../out ARCH=arm64 sunfish_defconfig
           make -j$(nproc) O=../out ARCH=arm64 \
             CC=clang \
-            CROSS_COMPILE=$CROSS_COMPILE \
-            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 \
             LLVM=1
           cd ..
 
