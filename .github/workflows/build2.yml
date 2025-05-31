@@ -1,4 +1,4 @@
-name: Build Sunfish Kernel (android-msm-sunfish-4.14-android13-qpr3, Clang, AnyKernel3)
+name: Build Android Kernel (Default Android Toolchains)
 
 on:
   workflow_dispatch:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout your repo
+      - name: Checkout your repository
         uses: actions/checkout@v4
 
       - name: Install dependencies
@@ -34,14 +34,8 @@ jobs:
             curl \
             python3 \
             zip
-          echo "Checking make and git availability and PATH:"
-          echo "$PATH"
-          which make
-          make --version
-          which git
-          git --version
 
-      - name: Download Clang and GCC toolchains
+      - name: Download Android default Clang and GCC toolchains
         run: |
           mkdir -p /home/runner/toolchains/clang
           wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-13.0.0_r13/clang-r450784d.tar.gz -O clang.tar.gz
@@ -54,16 +48,15 @@ jobs:
           ls -l /home/runner/toolchains/gcc/bin || true
 
       - name: Clone and Build Kernel
-        shell: bash
-        env:
-          ARCH: arm64
-          SUBARCH: arm64
-          CLANG_TRIPLE: aarch64-linux-gnu-
-          CROSS_COMPILE: /home/runner/toolchains/gcc/bin/aarch64-linux-android-
-          CC: /home/runner/toolchains/clang/bin/clang
-          PATH: /home/runner/toolchains/clang/bin:/home/runner/toolchains/gcc/bin:$PATH
         run: |
-          # Clone kernel if not already present
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          export CROSS_COMPILE=/home/runner/toolchains/gcc/bin/aarch64-linux-android-
+          export CC=/home/runner/toolchains/clang/bin/clang
+          export PATH=/home/runner/toolchains/clang/bin:/home/runner/toolchains/gcc/bin:$PATH
+
+          # Clone kernel source if not already present
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
           fi
