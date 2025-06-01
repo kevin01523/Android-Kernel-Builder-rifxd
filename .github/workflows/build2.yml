@@ -65,11 +65,7 @@ jobs:
             python3-protobuf \
             schedtool \
             squashfs-tools \
-            xsltproc
-
-      - name: Add swap space
-        run: |
-          sudo fallocate -l 4G /swapfile
+ -l 4G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -77,9 +73,7 @@ jobs:
 
       - name: Download and set up Neutron Clang (Antman)
         run: |
-          mkdir -p toolchains/neutron-clang
-          cd toolchains/neutron-clang
-          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          mkdir -p toolchains/antman/main/antman"
           chmod +x antman
           ./antman -S=05012024
           cd ../../
@@ -127,9 +121,11 @@ jobs:
           set -e
           rm -rf kernel/out
           cd kernel
+          # Remove -Werror from all Makefiles before building
+          #find . -type f -name 'Makefile*' -//g' {} +
           export ARCH=arm64
           export SUBARCH=arm64
-          # export LD=ld.lld
+          export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
           config_path="sunfish_defconfig"
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
