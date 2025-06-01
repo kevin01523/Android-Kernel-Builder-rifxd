@@ -120,7 +120,7 @@ jobs:
           export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-          export PATH="${PWD}/../toolchains/neutron-clang/bin:${PATH}"
+          
           config_path="sunfish_defconfig"
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=$CC LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 "$config_path" O=out
           echo "Compilation started..."
