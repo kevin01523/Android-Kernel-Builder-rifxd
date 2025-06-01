@@ -116,11 +116,14 @@ jobs:
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
           config_path="sunfish_defconfig"
-          # Prepend /usr/bin so system 'as' is used for 32-bit vDSO objects
-          export PATH=/usr/bin:$PATH
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
+          # Use system ARM cross-compiler for 32-bit objects
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD \
+            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=/usr/bin/arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD \
+            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=/usr/bin/arm-linux-gnueabi- O=out
           cd ..
 
       - name: Clone AnyKernel3
