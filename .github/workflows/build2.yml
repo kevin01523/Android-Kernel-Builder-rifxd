@@ -51,7 +51,6 @@ jobs:
             llvm \
             ccache \
             dwarves \
-            clang \
             lld \
             llvm-dev \
             g++-multilib \
