@@ -27,6 +27,7 @@ jobs:
             cpio \
             flex \
             git \
+            zip \
             lz4 \
             libssl-dev \
             libtfm-dev \
@@ -36,11 +37,13 @@ jobs:
             libncursesw6 \
             python3 \
             python3-venv \
+            libarchive-tools \
             rsync \
             unzip \
             wget \
             zstd \
             binutils-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu \
             gcc-arm-linux-gnueabi \
             device-tree-compiler \
             llvm \
@@ -59,7 +62,10 @@ jobs:
             python3-protobuf \
             schedtool \
             squashfs-tools \
-            xsltproc
+            xsltproc \
+            ftp \
+            lftp \
+            clang
 
       - name: Add swap space
         run: |
