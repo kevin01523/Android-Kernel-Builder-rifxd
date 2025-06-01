@@ -27,10 +27,7 @@ jobs:
             cpio \
             flex \
             git \
-            lz4 \
-            libarchive-tools \
-            libelf-dev \
-            libssl-dev \
+            lz4ssl-dev \
             libtfm-dev \
             libfl-dev \
             libncurses-dev \
@@ -45,7 +42,19 @@ jobs:
             binutils-arm-linux-gnueabihf \
             gcc-arm-linux-gnueabi \
             device-tree-compiler \
-            llvm-protobuf \
+            llvm \
+            ccache \
+            dwarves \
+            lld \
+            llvm-dev \
+            gnupg \
+            gperf \
+            imagemagick \
+            libsdl1.2-dev \
+            libxml2 \
+            pngcrush \
+            protobuf-compiler \
+            python3-protobuf \
             schedtool \
             squashfs-tools \
             xsltproc
@@ -55,20 +64,24 @@ jobs:
           sudo fallocate -l 4G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
-          sudo swapon /swap toolchains/neutron-clang
-          cd toolchains/neutron-clang
-          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-          chmod +x antman
-          ./antman -S=05012024
-          cd ../../
+          sudo swapon /swapfile
+          free -h
 
-      - name: Neutron Clang to PATH
+      - name: Download and set up Neutron Clang (Antman)
+        run: |
+          mkdir -p toolchains/neutron-clang
+          cd toolchains/neutron-clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/neutron-clang
+          ./antman --patch=glibc
+          cd ../..
+
+      - name: Export Neutron Clang to PATH
         run: |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
 
       - name: Clone kernel source
         run: |
-          git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
 
       - name: Set up git identity for cherry-pick
         run: |
@@ -81,29 +94,21 @@ jobs:
         run: |
           cd kernel
           git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
-          git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d2329
-          git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
-          cd ..
-
-      - name: Build Kernel
-        run: |
-          set -e
+          git -e
           rm -rf kernel/out
           cd kernel
           # Remove -Werror from all Makefiles before building (currently commented out)
-          # find . -type f - -exec sed -i 's/-Werror//g' {} +
+          # find . -type f -name 'Makefile*' -exec sed -i 's/-Werror//g' {} +
           export ARCH=arm64
           export SUBARCH=arm64
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
           config_path="sunfish_defconfig"
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
+          make - ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
-            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=gnueabi- O=out
           cd ..
 
       - name: Clone AnyKernel3
@@ -130,4 +135,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kernel-image
-          path: kernel/out/arch/arm64/boot/Image
+          path: kernel/out/arch/arm64/boot enable or disable certain steps, let me know!
