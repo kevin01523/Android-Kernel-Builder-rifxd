@@ -54,7 +54,6 @@ jobs:
             lld \
             llvm-dev \
             g++-multilib \
-            gcc-multilib \
             gnupg \
             gperf \
             imagemagick \
