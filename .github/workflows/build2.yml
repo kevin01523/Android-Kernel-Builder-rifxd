@@ -49,6 +49,7 @@ jobs:
             lld \
             llvm-dev \
             gnupg \
+            gnutls-bin \
             gperf \
             imagemagick \
             libsdl1.2-dev \
@@ -74,7 +75,7 @@ jobs:
           cd toolchains/neutron-clang
           curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
           chmod +x antman
-          ./antman -S=05012024
+          ./antman -S=11032023
           cd ../../
 
       - name: Patch glibc using Neutron Clang
