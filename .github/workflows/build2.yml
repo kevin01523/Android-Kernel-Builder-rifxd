@@ -46,7 +46,18 @@ jobs:
             binutils-arm-linux-gnueabihf \
             lftp \
             ftp \
-            pig \
+            pigz \
+            device-tree-compiler \
+            llvm \
+            ccache \
+            dwarves \
+            lld \
+            llvm-dev \
+            g++-multilib \
+            gcc-multilib \
+            gnupg \
+            gperf \
+            imagemagick \
             libsdl1.2-dev \
             libxml2 \
             libxml2-utils \
@@ -60,7 +71,9 @@ jobs:
 
       - name: Add swap space
         run: |
-          sudo
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
           sudo swapon /swapfile
           free -h
 
@@ -76,11 +89,38 @@ jobs:
       - name: Patch glibc using Neutron Clang
         run: |
           patch_glibc() {
-            echo "Patching glARCH=arm64
+            echo "Patching glibc using Neutron Clang..."
+            cd "${PWD}/toolchains/neutron-clang"
+            ./antman --patch=glibc
+            if [[ $? -ne 0 ]]; then
+              echo "Failed to patch glibc"
+              exit 1
+            fi
+            cd "${PWD}"
+            echo "glibc patched successfully"
+          }
+          patch_glibc
+
+      - name: Export Neutron Clang to PATH
+        run: |
+          echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
+
+      - name: Build Kernel
+        run: |
+          set -e
+          rm -rf out
+          if [ ! -d kernel ]; then
+            git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+          fi
+          cd kernel
+          export ARCH=arm64
+          export SUBARCH=arm64
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
           config_path="sunfish_defconfig"
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
+          echo "Compilation started..."
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out
           cd ..
 
       - name: Clone AnyKernel3
