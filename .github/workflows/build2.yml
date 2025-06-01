@@ -124,7 +124,15 @@ jobs:
 
       - name: Build Kernel
         run: |
-ARCH SUBARCH=$SUBARCH CC=clang \
+          set -e
+          rm -rf kernel/out
+          cd kernel
+          export ARCH=arm64
+          export SUBARCH=arm64
+          # export LD=ld.lld
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          config_path="sunfish_defconfig"
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
