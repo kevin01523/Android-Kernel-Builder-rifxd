@@ -37,16 +37,7 @@ jobs:
             libncurses6 \
             libncursesw6 \
             python3 \
-            python3-venv \
-            rsync \
-            unzip \
-            wget \
-            zstd \
-            binutils-arm-linux-gnueabihf \
-            gcc-arm-linux-gnueabi \
-            lftp \
-            ftp \
-            pigz \
+            python3- pigz \
             device-tree-compiler \
             llvm \
             ccache \
@@ -71,9 +62,7 @@ jobs:
         run: |
           sudo fallocate -l 4G /swapfile
           sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-          free -h
+ -h
 
       - name: Download and set up Neutron Clang (Antman)
         run: |
@@ -113,17 +102,23 @@ jobs:
           cd kernel
           export ARCH=arm64
           export SUBARCH=arm64
-          export LD=ld.lld
+          # export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
           config_path="sunfish_defconfig"
-          # Use system ARM cross-compiler for 32-bit objects
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD \
-            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=/usr/bin/arm-linux-gnueabi- "$config_path" O=out
+          # Dynamically find the arm-linux-gnueabi- toolchain prefix
+          ARM32_TOOLCHAIN=$(which arm-linux-gnueabi-gcc)
+          if [ -z "$ARM32_TOOLCHAIN" ]; then
+            echo "arm-linux-gnueabi-gcc not found!"
+            exit 1
+          fi
+          export ARM32_PREFIX="${ARM32_TOOLCHAIN%gcc}"
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
+            CLANG_TRIPLE=$CLANG_TRIPLE- \
+            CROSS_COMPILE_ARM32=${ARM32_PREFIX} "$config_path" O=out
           echo "Compilation started..."
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang LD=$LD \
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=/usr/bin/arm-linux-gnueabi- O=out
+            CROSS_COMPILE_ARM32=${ARM32_PREFIX} O=out
           cd ..
 
       - name: Clone AnyKernel3
