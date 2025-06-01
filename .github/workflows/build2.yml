@@ -75,31 +75,9 @@ jobs:
           sudo swapon /swapfile
           free -h
 
-      # - name: Download and set up Neutron Clang (Antman)
-      #   run: |
-      #     mkdir -p toolchains/neutron-clang
-      #     cd toolchains/neutron-clang
-      #     curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-      #     chmod +x antman
-      #     ./antman -S=11032023
-      #     cd ../../
-
-      # - name: Patch glibc using Neutron Clang
-      #   run: |
-      #     cd toolchains/neutron-clang
-      #     ./antman --patch=glibc
-      #     cd ../..
-
-      # - name: Export Neutron Clang to PATH
-      #   run: |
-      #     echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
-
-      - name: Clone Vortex Clang
+      - name: Download and extract Greenforce Clang
         run: |
-          mkdir -p toolchains
-          cd toolchains
-          git clone --depth=1 https://github.com/vijaymalav564/vortex-clang.git
-          cd ..
+          bash <(wget -qO- https://raw.githubusercontent.com/greenforce-project/greenforce_clang/refs/heads/main/get_clang.sh)
 
       - name: Clone kernel source
         run: |
@@ -123,7 +101,7 @@ jobs:
       - name: Build Kernel
         run: |
           set -e
-          export PATH="$PWD/toolchains/vortex-clang/bin:$PATH"
+          export PATH="$(pwd)/greenforce-clang/bin:$PATH"
           rm -rf kernel/out
           cd kernel
           # Remove -Werror from all Makefiles before building (currently commented out)
