@@ -75,7 +75,9 @@ jobs:
             dwarves \
             clang \
             lld \
-            llvm-dev
+            llvm-dev \
+            gcc-13 \
+            gcc-13-aarch64-linux-gnu
 
       - name: Download AOSP toolchains (Android 13)
         run: |
@@ -97,7 +99,6 @@ jobs:
 
           echo "Toolchain downloads and extraction complete."
           cd ..
-
       - name: Add swap space
         run: |
           sudo fallocate -l 4G /swapfile
