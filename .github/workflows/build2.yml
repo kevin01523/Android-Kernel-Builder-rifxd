@@ -50,7 +50,6 @@ jobs:
             pigz \
             device-tree-compiler \
             llvm \
-            # Added from your list:
             ccache \
             dwarves \
             clang \
@@ -70,7 +69,7 @@ jobs:
           tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
 
           echo "Downloading AOSP GCC 4.9 for arm (commit b0c6a654327ca8796bed1e61dffcf523d04dceaa)..."
-          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/b0c6a654327ca8796bed1e61dffcf523d04dceaa.tar.gz -O arm-linux-androideabi-4.9.tar.gz
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-andro-androideabi-4.9.tar.gz
           echo "Extracting arm GCC..."
           mkdir arm-linux-androideabi-4.9
           tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
@@ -147,4 +146,13 @@ jobs:
           cd ..
 
       - name: Upload AnyKernel3 flashable zip
-        uses: actions/upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: AnyKernel3-flashable
+          path: AnyKernel3-flashable.zip
+
+      - name: Upload kernel Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image
+          path: out/arch/arm64/boot/Image
