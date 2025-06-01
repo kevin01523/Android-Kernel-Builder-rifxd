@@ -12,23 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            bc \
-            bison \
-            curl \
-            ca-certificates \
-            cpio \
-            flex \
-            git \
-            lz4 \
-            libarchive-tools \
+      - name: Checkout repository libarchive-tools \
             libelf-dev \
             libssl-dev \
             libtfm-dev \
@@ -41,7 +25,6 @@ jobs:
             rsync \
             unzip \
             wget \
-            zip \
             zstd \
             binutils-arm-linux-gnueabihf \
             gcc-arm-linux-gnueabi \
