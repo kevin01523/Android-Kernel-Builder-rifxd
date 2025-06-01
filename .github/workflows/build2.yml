@@ -89,6 +89,21 @@ jobs:
           ./antman -S=05012024
           cd ../../
 
+      - name: Patch glibc using Neutron Clang
+        run: |
+          patch_glibc() {
+            echo "Patching glibc using Neutron Clang..."
+            cd "$HOME/toolchains/neutron-clang"
+            ./antman --patch=glibc
+            if [[ $? -ne 0 ]]; then
+              echo "Failed to patch glibc"
+              exit 1
+            fi
+            cd "$HOME"
+            echo "glibc patched successfully"
+          }
+          patch_glibc
+
       - name: Export Neutron Clang to PATH
         run: |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
@@ -98,48 +113,16 @@ jobs:
           set -e
           rm -rf out
 
-          export KERNEL_DIR="${PWD}/aosp-tools"
-          export OUT_DIR="${PWD}/out"
-
-          export PATH="${PWD}/toolchains/neutron-clang/bin:${PATH}"
-          export PATH="${KERNEL_DIR}/aarch64-linux-android-4.9/bin:${PATH}"
-          export PATH="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin:${PATH}"
-          export LD_LIBRARY_PATH="${PWD}/toolchains/neutron-clang/lib:${LD_LIBRARY_PATH}"
-
-          export LD=ld.lld
-
-          export CROSS_COMPILE="${KERNEL_DIR}/aarch64-linux-android-4.9/bin/aarch64-linux-gnu-"
-          export CROSS_COMPILE_ARM32="${KERNEL_DIR}/arm-linux-andro-4.9/bin/arm-linux-gnueabi-"
-
-          DEFCONFIG="sunfish_defconfig"
-
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
           fi
 
           cd kernel
 
-          # Defconfig step
-          make -j$(nproc) O=${OUT_DIR} \
-            CC=clang \
-            ARCH=arm64 \
-            CROSS_COMPILE=${CROSS_COMPILE} \
-            CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
-            LLVM=1 \
-            LLVM_IAS=1 \
-            ${DEFCONFIG}
-
-          # Build step
-          make -j$(nproc) O=${OUT_DIR} \
-            CC=clang \
-            ARCH=arm64 \
-            CROSS_COMPILE=${CROSS_COMPILE} \
-            CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
-            LLVM=1 \
-            LLVM_IAS=1 \
-            LD=${LD} \
-            NM=llvm-nm \
-            OBJCOPY=llvm-objcopy
+          config_path="sunfish_defconfig"
+          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 "$config_path" O=out
+          echo "Compilation started..."
+          make -j$(nproc) ARCH=arm64 CC=clang CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 O=out
 
           cd ..
 
