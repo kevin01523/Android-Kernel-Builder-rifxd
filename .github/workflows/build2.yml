@@ -118,13 +118,23 @@ jobs:
         run: |
           cd kernel
           git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
-          git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d2329
+          git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d232
           git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
           cd ..
 
       - name: Build Kernel
         run: |
-=arm-linux-gnueabi- "$config_path" O=out
+          set -e
+          rm -rf kernel/out
+          cd kernel
+          export ARCH=arm64
+          export SUBARCH=arm64
+          # export LD=ld.lld
+          export CLANG_TRIPLE=aarch64-linux-gnu-
+          config_path="sunfish_defconfig"
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
+            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
