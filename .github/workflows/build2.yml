@@ -1,7 +1,7 @@
 name: Android Kernel Build (AOSP Tools, Official Clang, Sunfish)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: {}
   push:
     branches: [ main ]
   pull_request:
@@ -10,7 +10,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,7 +48,8 @@ jobs:
             lftp \
             ftp \
             pigz \
-            device-tree-compiler
+            device-tree-compiler \
+            llvm
 
       - name: Download AOSP toolchains (Android 13)
         run: |
