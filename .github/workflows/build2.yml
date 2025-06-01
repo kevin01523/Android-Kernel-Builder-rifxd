@@ -103,21 +103,6 @@ jobs:
         run: |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
 
-      - name: Download and extract Google prebuilt GCC toolchains
-        run: |
-          # aarch64-linux-android-4.9 for 64-bit
-          mkdir -p prebuilts/gcc64
-          cd prebuilts/gcc64
-          curl -LO "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/refs/heads/android-msm-sunfish-4.14-android13-qpr3.tar.gz"
-          tar -xf android-msm-sunfish-4.14-android13-qpr3.tar.gz
-          cd ../..
-          # arm-linux-androideabi-4.9 for 32-bit
-          mkdir -p prebuilts/gcc32
-          cd prebuilts/gcc32
-          curl -LO "https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/refs/heads/android-msm-sunfish-4.14-android13-qpr3.tar.gz"
-          tar -xf android-msm-sunfish-4.14-android13-qpr3.tar.gz
-          cd ../..
-
       - name: Build Kernel
         run: |
           set -e
@@ -131,18 +116,14 @@ jobs:
           # export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
           config_path="sunfish_defconfig"
-          # Use Google prebuilt toolchains
-          GCC64_PATH="$PWD/../prebuilts/gcc64/bin/"
-          GCC32_PATH="$PWD/../prebuilts/gcc32/bin/"
-          export CROSS_COMPILE="${GCC64_PATH}aarch64-linux-android-"
-          export CROSS_COMPILE_ARM32="${GCC32_PATH}arm-linux-androideabi-"
+          # Use Clang from PATH, system arm-linux-gnueabi- for 32-bit
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
-            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=$CROSS_COMPILE \
-            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 "$config_path" O=out
+            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
-            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=$CROSS_COMPILE \
-            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 O=out
+            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out
           cd ..
 
       - name: Clone AnyKernel3
