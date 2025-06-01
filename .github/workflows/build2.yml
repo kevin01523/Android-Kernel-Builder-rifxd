@@ -124,13 +124,11 @@ jobs:
 
       - name: Build Kernel
         run: |
- ARCH=arm64
-          export SUBARCH=arm64
-          # export LD=ld.lld
-          export CLANG_TRIPLE=aarch64-linux-gnu-
-          config_path="sunfish_defconfig"
+ARCH SUBARCH=$SUBARCH CC=clang \
+            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
+          echo "Compilation started..."
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
-            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- O=out
           cd ..
