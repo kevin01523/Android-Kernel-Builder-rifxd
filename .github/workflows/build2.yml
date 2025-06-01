@@ -1,21 +1,4 @@
-name: Android Kernel Build (AOSP Tools, Official Clang, Sunfish)
-
-on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  build:
-    runs-on: ubuntu-22.04
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
+name: Android Kernel Build (AOSP Tools, Official Clang, Sun Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -44,6 +27,7 @@ jobs:
             zip \
             zstd \
             binutils-arm-linux-gnueabihf \
+            gcc-arm-linux-gnueabi \
             lftp \
             ftp \
             pigz \
@@ -92,17 +76,7 @@ jobs:
             echo "Patching glibc using Neutron Clang..."
             cd "${PWD}/toolchains/neutron-clang"
             ./antman --patch=glibc
-            if [[ $? -ne 0 ]]; then
-              echo "Failed to patch glibc"
-              exit 1
-            fi
-            cd "${PWD}"
-            echo "glibc patched successfully"
-          }
-          patch_glibc
-
-      - name: Export Neutron Clang to PATH
-        run: |
+            if [[ $? -ne : |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
 
       - name: Build Kernel
