@@ -50,7 +50,12 @@ jobs:
             pigz \
             device-tree-compiler \
             llvm \
-            llvm-18-linker-tools
+            # Added from your list:
+            ccache \
+            dwarves \
+            clang \
+            lld \
+            llvm-dev
 
       - name: Download AOSP toolchains (Android 13)
         run: |
@@ -142,13 +147,4 @@ jobs:
           cd ..
 
       - name: Upload AnyKernel3 flashable zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: AnyKernel3-flashable
-          path: AnyKernel3-flashable.zip
-
-      - name: Upload kernel Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-image
-          path: out/arch/arm64/boot/Image
+        uses: actions/upload
