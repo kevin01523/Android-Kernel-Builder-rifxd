@@ -103,22 +103,29 @@ jobs:
         run: |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
 
+      - name: Clone kernel source
+        run: |
+          git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+
+      - name: Cherry-pick proton_zf6 commit 68acd6966ac98c4610813cec759afb33015d2329
+        run: |
+          cd kernel
+          git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
+          git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d2329
+          git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
+          cd ..
+
       - name: Build Kernel
         run: |
           set -e
           rm -rf out
-          if [ ! -d kernel ]; then
-            git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
-          fi
           cd kernel
           export ARCH=arm64
           export SUBARCH=arm64
           # export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
           config_path="sunfish_defconfig"
-          # Use Clang from PATH, system arm-linux-gnueabi- for 32-bit
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
-            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
+          make -j$(nproc) ARCH=$=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
@@ -132,7 +139,7 @@ jobs:
 
       - name: Copy kernel Image to AnyKernel3
         run: |
-          cp out/arch/arm64/boot/Image AnyKernel3/
+          cp kernel/out/arch/arm64/boot/Image AnyKernel3/
 
       - name: Create AnyKernel3 flashable zip
         run: |
@@ -150,4 +157,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kernel-image
-          path: out/arch/arm64/boot/Image
+          path: kernel/out/arch/arm64/boot/Image
