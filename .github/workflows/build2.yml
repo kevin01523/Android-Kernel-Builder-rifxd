@@ -104,6 +104,7 @@ jobs:
       - name: Export Neutron Clang to PATH
         run: |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
+          export PATH="${PWD}/toolchains/neutron-clang/bin:${PATH}"
 
       - name: Build Kernel
         run: |
@@ -115,15 +116,17 @@ jobs:
           cd kernel
           export ARCH=arm64
           export CC=clang
-          export CLANG_TRIPLE=aarch64-linux-android-
+          export LD=ld.lld
+          export CLANG_TRIPLE=aarch64-linux-gnu-
           export CROSS_COMPILE=aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export LLVM=1
-          export PATH="/usr/bin:${PATH}"
+          export LLVM_IAS=1
+          export PATH="${PWD}/../toolchains/neutron-clang/bin:${PATH}"
           config_path="sunfish_defconfig"
-          make -j$(nproc) ARCH=$ARCH CC=$CC CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 LLVM=$LLVM "$config_path" O=out
+          make -j$(nproc) ARCH=$ARCH CC=$CC LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 LLVM=$LLVM LLVM_IAS=$LLVM_IAS "$config_path" O=out
           echo "Compilation started..."
-          make -j$(nproc) ARCH=$ARCH CC=$CC CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 LLVM=$LLVM O=out
+          make -j$(nproc) ARCH=$ARCH CC=$CC LD=$LD CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=$CROSS_COMPILE CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 LLVM=$LLVM LLVM_IAS=$LLVM_IAS O=out
           cd ..
 
       - name: Clone AnyKernel3
