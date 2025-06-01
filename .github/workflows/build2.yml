@@ -93,13 +93,13 @@ jobs:
         run: |
           patch_glibc() {
             echo "Patching glibc using Neutron Clang..."
-            cd "$HOME/toolchains/neutron-clang"
+            cd "${PWD}/toolchains/neutron-clang"
             ./antman --patch=glibc
             if [[ $? -ne 0 ]]; then
               echo "Failed to patch glibc"
               exit 1
             fi
-            cd "$HOME"
+            cd "${PWD}"
             echo "glibc patched successfully"
           }
           patch_glibc
