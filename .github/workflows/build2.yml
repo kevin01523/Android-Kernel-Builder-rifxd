@@ -37,7 +37,16 @@ jobs:
             libncurses6 \
             libncursesw6 \
             python3 \
-            python3- pigz \
+            python3-venv \
+            rsync \
+            unzip \
+            wget \
+            zstd \
+            binutils-arm-linux-gnueabihf \
+            gcc-arm-linux-gnueabi \
+            lftp \
+            ftp \
+            pigz \
             device-tree-compiler \
             llvm \
             ccache \
@@ -62,7 +71,9 @@ jobs:
         run: |
           sudo fallocate -l 4G /swapfile
           sudo chmod 600 /swapfile
- -h
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
 
       - name: Download and set up Neutron Clang (Antman)
         run: |
@@ -113,7 +124,7 @@ jobs:
           fi
           export ARM32_PREFIX="${ARM32_TOOLCHAIN%gcc}"
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
-            CLANG_TRIPLE=$CLANG_TRIPLE- \
+            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=${ARM32_PREFIX} "$config_path" O=out
           echo "Compilation started..."
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
