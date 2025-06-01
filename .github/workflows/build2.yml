@@ -42,10 +42,8 @@ jobs:
             unzip \
             wget \
             zstd \
-            binutils-arm-linux-arm-linux-gnueabi \
-            lftp \
-            ftp \
-            pigz \
+            binutils-arm-linux-gnueabihf \
+            gcc-arm-linux-gnueabi \
             device-tree-compiler \
             llvm \
             ccache \
@@ -57,7 +55,7 @@ jobs:
             imagemagick \
             libsdl1.2-dev \
             libxml2 \
-            libxml2 pngcrush \
+            pngcrush \
             protobuf-compiler \
             python3-protobuf \
             schedtool \
@@ -66,16 +64,15 @@ jobs:
 
       - name: Add swap space
         run: |
-          sudo fallocate -l 4G /swapfile
-          sudo chmod 600 /swapfile
-          sudo m toolchains/neutron-clang
-          cd toolchains/neutron-clang
-          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-          chmod +x antman
-          ./antman -S=05012024
-          cd ../../
+          sudo fallocate -swapfile
+          sudo swapon /swapfile
+          free -h
 
-      - name: Patch glibc using Neutron Clang
+      - name: Download and set up Neutron Clang (Antman)
+        run: |
+          mkdir -p toolchains/neutron-clang
+          cd toolchains/neutron-clang
+          curl -LO "https://raw.githubusercontent.com: Patch glibc using Neutron Clang
         run: |
           cd toolchains/neutron-clang
           ./antman --patch=glibc
@@ -83,11 +80,7 @@ jobs:
 
       - name: Export Neutron Clang to PATH
         run: |
-          echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
-
-      - name: Clone kernel source
-        run: |
-          git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+          echo "${PWD}/toolchains/neutron-clang/bin4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
 
       - name: Set up git identity for cherry-pick
         run: |
@@ -104,9 +97,12 @@ jobs:
           git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
           cd ..
 
-      -/out
+      - name: Build Kernel
+        run: |
+          set -e
+          rm -rf kernel/out
           cd kernel
-          # Remove -Werror from all Makefiles before building
+          # Remove -Werror from all Makefiles before building (currently commented out)
           # find . -type f -name 'Makefile*' -exec sed -i 's/-Werror//g' {} +
           export ARCH=arm64
           export SUBARCH=arm64
