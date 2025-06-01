@@ -1,4 +1,4 @@
-name: Android Kernel Build (AOSP Tools, Official Clang, Sunfish)
+name: Android Kernel Build (Antman/Neutron Clang, Sunfish)
 
 on:
   workflow_dispatch:
@@ -57,19 +57,16 @@ jobs:
           mkdir -p aosp-tools
           cd aosp-tools
 
-          echo "Downloading AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)..."
+          echo "Downloading AOSP GCC 4.9 for aarch64..."
           wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
-          echo "Extracting aarch64 GCC..."
           mkdir aarch64-linux-android-4.9
-          tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
+          tar -x4.9
 
-          echo "Downloading AOSP GCC 4.9 for arm (commit b0c6a654327ca8796bed1e61dffcf523d04dceaa)..."
+          echo "Downloading AOSP GCC 4.9 for arm..."
           wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/b0c6a654327ca8796bed1e61dffcf523d04dceaa.tar.gz -O arm-linux-androideabi-4.9.tar.gz
-          echo "Extracting arm GCC..."
           mkdir arm-linux-androideabi-4.9
           tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
 
-          echo "Toolchain downloads and extraction complete."
           cd ..
 
       - name: Fix binutils symlinks
@@ -77,7 +74,7 @@ jobs:
           # Symlink all the expected binutils for kernel cross-builds (aarch64-linux-gnu-* to aarch64-linux-android-*)
           AARCH64_BIN="${PWD}/aosp-tools/aarch64-linux-android-4.9/bin"
           cd "$AARCH64_BIN"
-          for tool in ar nm objcopy objdump ranlib strip readelf; do
+          for tool in ar nm objcopy objdump ranlib strip readelf ld; do
               [ -e "aarch64-linux-gnu-$tool" ] || ln -s "aarch64-linux-android-$tool" "aarch64-linux-gnu-$tool"
           done
           cd -
@@ -85,7 +82,7 @@ jobs:
           # Also symlink arm-linux-gnueabi-* to arm-linux-androideabi-* for 32-bit tools
           ARM32_BIN="${PWD}/aosp-tools/arm-linux-androideabi-4.9/bin"
           cd "$ARM32_BIN"
-          for tool in ar nm objcopy objdump ranlib strip readelf; do
+          for tool in ar nm objcopy objdump ranlib strip readelf ld; do
               [ -e "arm-linux-gnueabi-$tool" ] || ln -s "arm-linux-androideabi-$tool" "arm-linux-gnueabi-$tool"
           done
           cd -
@@ -111,7 +108,7 @@ jobs:
         run: |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
 
-      - name: Build Kernel
+      - name: Build Kernel (Antman-style)
         run: |
           set -e
           rm -rf out
@@ -119,6 +116,7 @@ jobs:
           export KERNEL_DIR="${PWD}/aosp-tools"
           export OUT_DIR="${PWD}/out"
 
+          # Toolchain paths
           export PATH="${PWD}/toolchains/neutron-clang/bin:${PATH}"
           export PATH="${KERNEL_DIR}/aarch64-linux-android-4.9/bin:${PATH}"
           export PATH="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin:${PATH}"
@@ -131,26 +129,27 @@ jobs:
 
           DEFCONFIG="sunfish_defconfig"
 
+          # Clone kernel source if not present
           if [ ! -d kernel ]; then
             git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
           fi
 
           cd kernel
 
-          # Defconfig step
-          make -j2 O=${OUT_DIR} \
-            CC=clang \
+          echo "Running defconfig..."
+          make -j$(nproc) O=${OUT_DIR} \
             ARCH=arm64 \
+            CC=clang \
             CROSS_COMPILE=${CROSS_COMPILE} \
             CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
             LLVM=1 \
             LLVM_IAS=1 \
             ${DEFCONFIG}
 
-          # Build step
-          make -j2 O=${OUT_DIR} \
-            CC=clang \
+          echo "Starting build..."
+          make -j$(nproc) O=${OUT_DIR} \
             ARCH=arm64 \
+            CC=clang \
             CROSS_COMPILE=${CROSS_COMPILE} \
             CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
             LLVM=1 \
