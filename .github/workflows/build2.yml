@@ -58,7 +58,11 @@ jobs:
             python3-protobuf \
             schedtool \
             squashfs-tools \
-            xsltproc -l 4G /swapfile
+            xsltproc
+
+      - name: Add swap space
+        run: |
+          sudo fallocate -l 4G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -71,7 +75,9 @@ jobs:
           curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
           chmod +x antman
           ./antman -S=05012024
-         : Patch glibc using Neutron Clang
+          cd ../../
+
+      - name: Patch glibc using Neutron Clang
         run: |
           cd toolchains/neutron-clang
           ./antman --patch=glibc
@@ -97,7 +103,14 @@ jobs:
           cd kernel
           git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
           git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d2329
-          git cherry-pick 68acd6966ac98c4610813cec759afb330 cd kernel
+          git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
+          cd ..
+
+      - name: Build Kernel
+        run: |
+          set -e
+          rm -rf kernel/out
+          cd kernel
           # Remove -Werror from all Makefiles before building (currently commented out)
           # find . -type f -name 'Makefile*' -exec sed -i 's/-Werror//g' {} +
           export ARCH=arm64
