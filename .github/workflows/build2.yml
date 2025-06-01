@@ -72,24 +72,6 @@ jobs:
           echo "Toolchain downloads and extraction complete."
           cd ..
 
-      - name: Fix binutils symlinks
-        run: |
-          # Symlink all the expected binutils for kernel cross-builds (aarch64-linux-gnu-* to aarch64-linux-android-*)
-          AARCH64_BIN="${PWD}/aosp-tools/aarch64-linux-android-4.9/bin"
-          cd "$AARCH64_BIN"
-          for tool in ar nm objcopy objdump ranlib strip readelf ld; do
-              [ -e "aarch64-linux-gnu-$tool" ] || ln -s "aarch64-linux-android-$tool" "aarch64-linux-gnu-$tool"
-          done
-          cd -
-
-          # Also symlink arm-linux-gnueabi-* to arm-linux-androideabi-* for 32-bit tools
-          ARM32_BIN="${PWD}/aosp-tools/arm-linux-androideabi-4.9/bin"
-          cd "$ARM32_BIN"
-          for tool in ar nm objcopy objdump ranlib strip readelf ld; do
-              [ -e "arm-linux-gnueabi-$tool" ] || ln -s "arm-linux-androideabi-$tool" "arm-linux-gnueabi-$tool"
-          done
-          cd -
-
       - name: Add swap space
         run: |
           sudo fallocate -l 4G /swapfile
@@ -127,7 +109,7 @@ jobs:
           export LD=ld.lld
 
           export CROSS_COMPILE="${KERNEL_DIR}/aarch64-linux-android-4.9/bin/aarch64-linux-gnu-"
-          export CROSS_COMPILE_ARM32="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin/arm-linux-gnueabi-"
+          export CROSS_COMPILE_ARM32="${KERNEL_DIR}/arm-linux-andro-4.9/bin/arm-linux-gnueabi-"
 
           DEFCONFIG="sunfish_defconfig"
 
