@@ -3,13 +3,38 @@ name: Android Kernel Build (AOSP Tools, Official Clang, Sunfish)
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   build:
-    runs-on \
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            bc \
+            bison \
+            curl \
+            ca-certificates \
+            cpio \
+            flex \
+            git \
+            lz4 \
+            libarchive-tools \
+            libelf-dev \
+            libssl-dev \
+            libtfm-dev \
+            libfl-dev \
+            libncurses-dev \
+            libncurses6 \
             libncursesw6 \
             python3 \
             python3-venv \
@@ -26,7 +51,6 @@ jobs:
             pigz \
             device-tree-compiler \
             llvm \
-            # Added missing packages:
             ccache \
             dwarves \
             clang \
@@ -39,7 +63,8 @@ jobs:
           mkdir -p aosp-tools
           cd aosp-tools
 
-          echo "Downloading AOSP GCC 4.9 for aandroid-4.9.tar.gz
+          echo "Downloading AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)..."
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
           echo "Extracting aarch64 GCC..."
           mkdir aarch64-linux-android-4.9
           tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
@@ -50,7 +75,12 @@ jobs:
           mkdir arm-linux-androideabi-4.9
           tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
 
-          echo "Toolchain downloads fallocate -l 4G /swapfile
+          echo "Toolchain downloads and extraction complete."
+          cd ..
+
+      - name: Add swap space
+        run: |
+          sudo fallocate -l 4G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -60,7 +90,12 @@ jobs:
         run: |
           mkdir -p toolchains/neutron-clang
           cd toolchains/neutron-clang
-          curl glibc using Neutron Clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod +x antman
+          ./antman -S=05012024
+          cd ../../
+
+      - name: Patch glibc using Neutron Clang
         run: |
           patch_glibc() {
             echo "Patching glibc using Neutron Clang..."
@@ -115,18 +150,3 @@ jobs:
 
       - name: Create AnyKernel3 flashable zip
         run: |
-          cd AnyKernel3
-          zip -r9 ../AnyKernel3-flashable.zip ./*
-          cd ..
-
-      - name: Upload AnyKernel3 flashable zip
-        uses: actions/upload-artifact@v4
-        with:
-          name: AnyKernel3-flashable
-          path: AnyKernel3-flashable.zip
-
-      - name: Upload kernel Image
-        uses: actions/upload-artifact@v4
-        with:
-          name: kernel-image
-          path: out/arch/arm64/boot/Image
