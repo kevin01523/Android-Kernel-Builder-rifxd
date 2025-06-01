@@ -45,42 +45,30 @@ jobs:
             binutils-arm-linux-gnueabihf \
             gcc-arm-linux-gnueabi \
             device-tree-compiler \
-            llvm \
-            ccache \
-            dwarves \
-            lld \
-            llvm-dev \
-            gnupg \
-            gperf \
-            imagemagick \
-            libsdl1.2-dev \
-            libxml2 \
-            pngcrush \
-            protobuf-compiler \
-            python3-protobuf \
+            llvm-protobuf \
             schedtool \
             squashfs-tools \
             xsltproc
 
       - name: Add swap space
         run: |
-          sudo fallocate -swapfile
-          sudo swapon /swapfile
-          free -h
-
-      - name: Download and set up Neutron Clang (Antman)
-        run: |
-          mkdir -p toolchains/neutron-clang
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swap toolchains/neutron-clang
           cd toolchains/neutron-clang
-          curl -LO "https://raw.githubusercontent.com: Patch glibc using Neutron Clang
-        run: |
-          cd toolchains/neutron-clang
-          ./antman --patch=glibc
-          cd ../..
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod +x antman
+          ./antman -S=05012024
+          cd ../../
 
-      - name: Export Neutron Clang to PATH
+      - name: Neutron Clang to PATH
         run: |
-          echo "${PWD}/toolchains/neutron-clang/bin4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+          echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
+
+      - name: Clone kernel source
+        run: |
+          git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
 
       - name: Set up git identity for cherry-pick
         run: |
@@ -103,7 +91,7 @@ jobs:
           rm -rf kernel/out
           cd kernel
           # Remove -Werror from all Makefiles before building (currently commented out)
-          # find . -type f -name 'Makefile*' -exec sed -i 's/-Werror//g' {} +
+          # find . -type f - -exec sed -i 's/-Werror//g' {} +
           export ARCH=arm64
           export SUBARCH=arm64
           export LD=ld.lld
