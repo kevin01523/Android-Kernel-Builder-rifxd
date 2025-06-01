@@ -69,7 +69,7 @@ jobs:
 
       - name: Add swap space
         run: |
- -l 4G /swapfile
+          sudo fallocate -l 4G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
@@ -124,17 +124,7 @@ jobs:
 
       - name: Build Kernel
         run: |
-          set -e
-          rm -rf kernel/out
-          cd kernel
-          export ARCH=arm64
-          export SUBARCH=arm64
-          # export LD=ld.lld
-          export CLANG_TRIPLE=aarch64-linux-gnu-
-          config_path="sunfish_defconfig"
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
-            CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
+=arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
