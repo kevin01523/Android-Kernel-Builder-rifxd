@@ -65,23 +65,24 @@ jobs:
             python3-protobuf \
             schedtool \
             squashfs-tools \
- -l 4G /swapfile
+            xsltproc
+
+      - name: Add swap space
+        run: |
+          sudo fallocate -l 4G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
           sudo swapon /swapfile
           free -h
 
-      - name: Download and set up Neutron Clang (Antman)
-        run: |
-          mkdir -p toolchains/antman/main/antman"
+      - name: Download and set up Ne toolchains/neutron-clang
+          cd toolchains/neutron-clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
           chmod +x antman
           ./antman -S=05012024
           cd ../../
 
-      - name: Patch glibc using Neutron Clang
-        run: |
-          patch_glibc() {
-            echo "Patching glibc using Neutron Clang..."
+      - name:..."
             cd "${PWD}/toolchains/neutron-clang"
             ./antman --patch=glibc
             if [[ $? -ne 0 ]]; then
@@ -90,10 +91,7 @@ jobs:
             fi
             cd "${PWD}"
             echo "glibc patched successfully"
-          }
-          patch_glibc
-
-      - name: Export Neutron Clang to PATH
+          PATH
         run: |
           echo "${PWD}/toolchains/neutron-clang/bin" >> $GITHUB_PATH
 
@@ -122,13 +120,12 @@ jobs:
           rm -rf kernel/out
           cd kernel
           # Remove -Werror from all Makefiles before building
-          #find . -type f -name 'Makefile*' -//g' {} +
+          #find . -type f -name 'Makefile*' -exec sed -i 's/-Werror//g' {} +
           export ARCH=arm64
           export SUBARCH=arm64
           export LD=ld.lld
           export CLANG_TRIPLE=aarch64-linux-gnu-
-          config_path="sunfish_defconfig"
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
+         ARCH SUBARCH=$SUBARCH CC=clang \
             CLANG_TRIPLE=$CLANG_TRIPLE CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- "$config_path" O=out
           echo "Compilation started..."
