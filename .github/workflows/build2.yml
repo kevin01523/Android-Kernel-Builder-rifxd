@@ -92,7 +92,7 @@ jobs:
 
       - name: Clone kernel source
         run: |
-          git clone --depth=1 --branch android-msm-sunfish-4.14-android13-qpr3 https://android.googlesource.com/kernel/msm kernel
+          git clone --depth=1 --branch sunfishkernel2023 https://github.com/kevin01523/Sunfish_stock_ksu_next kernel
 
       - name: Set up git identity for cherry-pick
         run: |
