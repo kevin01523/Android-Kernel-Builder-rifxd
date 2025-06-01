@@ -45,6 +45,7 @@ jobs:
             zstd \
             gcc-aarch64-linux-gnu \
             gcc-arm-linux-gnueabi \
+            gcc-arm-linux-androideabi \
             binutils-arm-linux-gnueabihf \
             lftp \
             ftp \
@@ -131,9 +132,7 @@ jobs:
           export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
           export LLVM=1
 
-          # === WORKAROUND: Ensure /usr/bin comes before Clang in PATH ===
-          # This makes sure the GNU assembler for ARM32 is used for vdso32 objects,
-          # not Clang's as (which does not support -EL).
+          # WORKAROUND: Ensure /usr/bin comes before Clang in PATH for vdso32 assembler
           export PATH="/usr/bin:${PATH}"
 
           config_path="sunfish_defconfig"
