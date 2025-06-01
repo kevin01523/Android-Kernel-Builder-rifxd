@@ -149,3 +149,6 @@ jobs:
 
       - name: Upload kernel Image
         uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image
+          path: out/arch/arm64/boot/Image
