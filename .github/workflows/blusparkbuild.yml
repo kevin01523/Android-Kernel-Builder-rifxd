@@ -1,4 +1,4 @@
-name: Android Kernel Build (clang-crDroid, Sunfish blu_spark)
+name: Android Kernel Build (neutron-clang + Antman, Sunfish blu_spark)
 
 on:
   workflow_dispatch:
@@ -88,10 +88,20 @@ jobs:
           sudo swapon /swapfile
           free -h
 
-      - name: Download clang-crDroid toolchain
+      - name: Download and set up Neutron Clang (Antman)
         run: |
-          mkdir -p toolchains/clang-crDroid
-          git clone --depth=1 --branch 14.0 https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225 toolchains/clang-crDroid
+          mkdir -p toolchains/neutron-clang
+          cd toolchains/neutron-clang
+          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+          chmod +x antman
+          ./antman -S=11032023
+          cd ../..
+
+      - name: Patch glibc using Neutron Clang
+        run: |
+          cd toolchains/neutron-clang
+          ./antman --patch=glibc
+          cd ../..
 
       - name: Download and extract wahoo-kernel-tools
         run: |
@@ -115,28 +125,28 @@ jobs:
       - name: Build Kernel
         run: |
           set -e
-          export PATH="$(pwd)/toolchains/clang-crDroid/bin:$(pwd)/toolchains/wahoo-kernel-tools/bin:$PATH"
+          export PATH="$(pwd)/toolchains/neutron-clang/bin:$(pwd)/toolchains/wahoo-kernel-tools/bin:$PATH"
           echo "PATH for build: $PATH"
           rm -rf kernel/out
           cd kernel
           pwd
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/lib64:${LD_LIBRARY_PATH}"
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/lib64:${LD_LIBRARY_PATH}"
           config_path="sunfish_defconfig"
           # Export toolchain and utility paths as variables
-          export LD_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/ld.lld"
-          export CC_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/clang"
-          export CROSS_COMPILE_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/aarch64-linux-gnu-"
-          export CROSS_COMPILE_ARM32_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/arm-linux-gnueabi-"
-          export AR_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-ar"
-          export NM_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-nm"
-          export OBJCOPY_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-objcopy"
-          export OBJDUMP_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-objdump"
-          export READELF_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-readelf"
-          export OBJSIZE_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-size"
-          export STRIP_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-strip"
-          export LDGOLD_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/aarch64-linux-gnu-ld.gold"
-          export LLVM_AR_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-ar"
-          export LLVM_DIS_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-dis"
+          export LD_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/ld.lld"
+          export CC_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/clang"
+          export CROSS_COMPILE_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/aarch64-linux-gnu-"
+          export CROSS_COMPILE_ARM32_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/arm-linux-gnueabi-"
+          export AR_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-ar"
+          export NM_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-nm"
+          export OBJCOPY_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-objcopy"
+          export OBJDUMP_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-objdump"
+          export READELF_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-readelf"
+          export OBJSIZE_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-size"
+          export STRIP_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-strip"
+          export LDGOLD_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/aarch64-linux-gnu-ld.gold"
+          export LLVM_AR_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-ar"
+          export LLVM_DIS_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-dis"
           export ARCH=arm64
           export SUBARCH=arm64
           export CCACHE=1
