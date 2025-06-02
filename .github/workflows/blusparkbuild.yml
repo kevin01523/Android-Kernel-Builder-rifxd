@@ -1,4 +1,4 @@
-name: Android Kernel Build (neutron-clang + Antman, Sunfish blu_spark)
+name: Android Kernel Build (AOSP toolchains, Sunfish blu_spark)
 
 on:
   workflow_dispatch:
@@ -88,20 +88,45 @@ jobs:
           sudo swapon /swapfile
           free -h
 
-      - name: Download and set up Neutron Clang (Antman)
+      - name: Download AOSP toolchains (Android 13)
         run: |
-          mkdir -p toolchains/neutron-clang
-          cd toolchains/neutron-clang
-          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-          chmod +x antman
-          ./antman -S=11032023
-          cd ../..
+          set -e
+          mkdir -p aosp-tools
+          cd aosp-tools
+          echo "Downloading official Android 13 clang (r450784d, android13-qpr3-s9-release)..."
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android13-qpr3-s9-release/clang-r450784d.tar.gz
+          echo "Extracting clang..."
+          mkdir clang-r450784d
+          tar -xzf clang-r450784d.tar.gz -C clang-r450784d
+          echo "Downloading AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)..."
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
+          echo "Extracting aarch64 GCC..."
+          mkdir aarch64-linux-android-4.9
+          tar -xzf aarch64-linux-android-4.9.tar.gz -C aarch64-linux-android-4.9
+          echo "Downloading AOSP GCC 4.9 for arm (commit b0c6a654327ca8796bed1e61dffcf523d04dceaa)..."
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/b0c6a654327ca8796bed1e61dffcf523d04dceaa.tar.gz -O arm-linux-androideabi-4.9.tar.gz
+          echo "Extracting arm GCC..."
+          mkdir arm-linux-androideabi-4.9
+          tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
+          echo "Toolchain downloads and extraction complete."
+          cd ..
 
-      - name: Patch glibc using Neutron Clang
+      - name: Fix binutils symlinks
         run: |
-          cd toolchains/neutron-clang
-          ./antman --patch=glibc
-          cd ../..
+          # Symlink all the expected binutils for kernel cross-builds (aarch64-linux-gnu-* to aarch64-linux-android-*)
+          AARCH64_BIN="${PWD}/aosp-tools/aarch64-linux-android-4.9/bin"
+          cd "$AARCH64_BIN"
+          for tool in ar nm objcopy objdump ranlib strip readelf; do
+              [ -e "aarch64-linux-gnu-$tool" ] || ln -s "aarch64-linux-android-$tool" "aarch64-linux-gnu-$tool"
+          done
+          cd -
+          # Also symlink arm-linux-gnueabi-* to arm-linux-androideabi-* for 32-bit tools
+          ARM32_BIN="${PWD}/aosp-tools/arm-linux-androideabi-4.9/bin"
+          cd "$ARM32_BIN"
+          for tool in ar nm objcopy objdump ranlib strip readelf; do
+              [ -e "arm-linux-gnueabi-$tool" ] || ln -s "arm-linux-androideabi-$tool" "arm-linux-gnueabi-$tool"
+          done
+          cd -
 
       - name: Download and extract wahoo-kernel-tools
         run: |
@@ -131,82 +156,40 @@ jobs:
       - name: Build Kernel
         run: |
           set -e
-          export PATH="$(pwd)/toolchains/neutron-clang/bin:$(pwd)/toolchains/wahoo-kernel-tools/bin:$PATH"
-          echo "PATH for build: $PATH"
+          export KERNEL_DIR="${PWD}/aosp-tools"
+          export PATH="${KERNEL_DIR}/clang-r450784d/bin:${PATH}"
+          export PATH="${KERNEL_DIR}/aarch64-linux-android-4.9/bin:${PATH}"
+          export PATH="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin:${PATH}"
+          export LD_LIBRARY_PATH="${KERNEL_DIR}/clang-r450784d/lib64:${LD_LIBRARY_PATH}"
+          export LD=ld.lld
+          export CROSS_COMPILE="${KERNEL_DIR}/aarch64-linux-android-4.9/bin/aarch64-linux-gnu-"
+          export CROSS_COMPILE_ARM32="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin/arm-linux-gnueabi-"
+          DEFCONFIG="sunfish_defconfig"
           rm -rf kernel/out
           cd kernel
-          pwd
-          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/lib64:${LD_LIBRARY_PATH}"
-          config_path="sunfish_defconfig"
-          # Export toolchain and utility paths as variables
-          export LD_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/ld.lld"
-          export CC_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/clang"
-          export CROSS_COMPILE_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/aarch64-linux-gnu-"
-          export CROSS_COMPILE_ARM32_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/arm-linux-gnueabi-"
-          export AR_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-ar"
-          export NM_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-nm"
-          export OBJCOPY_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-objcopy"
-          export OBJDUMP_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-objdump"
-          export READELF_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-readelf"
-          export OBJSIZE_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-size"
-          export STRIP_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-strip"
-          export LDGOLD_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/aarch64-linux-gnu-ld.gold"
-          export LLVM_AR_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-ar"
-          export LLVM_DIS_PATH="$GITHUB_WORKSPACE/toolchains/neutron-clang/bin/llvm-dis"
-          export ARCH=arm64
-          export SUBARCH=arm64
-          export CCACHE=1
-
-          make -j$(nproc) \
-            LD="$LD_PATH" \
-            CC="$CC_PATH" \
-            CROSS_COMPILE="$CROSS_COMPILE_PATH" \
-            CROSS_COMPILE_ARM32="$CROSS_COMPILE_ARM32_PATH" \
-            AR="$AR_PATH" \
-            NM="$NM_PATH" \
-            OBJCOPY="$OBJCOPY_PATH" \
-            OBJDUMP="$OBJDUMP_PATH" \
-            READELF="$READELF_PATH" \
-            OBJSIZE="$OBJSIZE_PATH" \
-            STRIP="$STRIP_PATH" \
-            LDGOLD="$LDGOLD_PATH" \
-            LLVM_AR="$LLVM_AR_PATH" \
-            LLVM_DIS="$LLVM_DIS_PATH" \
-            LLVM=1 LLVM_IAS=1 \
-            CCACHE=1 \
-            KCFLAGS="-Wno-enum-conversion" DTC_EXT=dtc \
-            "$config_path" O=out
-
-          echo "Compilation started..."
-
-          make -j$(nproc) \
-            LD="$LD_PATH" \
-            CC="$CC_PATH" \
-            CROSS_COMPILE="$CROSS_COMPILE_PATH" \
-            CROSS_COMPILE_ARM32="$CROSS_COMPILE_ARM32_PATH" \
-            AR="$AR_PATH" \
-            NM="$NM_PATH" \
-            OBJCOPY="$OBJCOPY_PATH" \
-            OBJDUMP="$OBJDUMP_PATH" \
-            READELF="$READELF_PATH" \
-            OBJSIZE="$OBJSIZE_PATH" \
-            STRIP="$STRIP_PATH" \
-            LDGOLD="$LDGOLD_PATH" \
-            LLVM_AR="$LLVM_AR_PATH" \
-            LLVM_DIS="$LLVM_DIS_PATH" \
-            LLVM=1 LLVM_IAS=1 \
-            KBUILD_BUILD_HOST="$KBUILD_BUILD_HOST" \
-            KBUILD_BUILD_USER="$KBUILD_BUILD_USER" \
-            CCACHE=1 \
-            KCFLAGS="-Wno-enum-conversion" \
-            DTC_EXT=dtc O=out
-
+          # Defconfig step
+          make O=../out \
+            CC=clang \
+            ARCH=arm64 \
+            CROSS_COMPILE=${CROSS_COMPILE} \
+            CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            ${DEFCONFIG}
+          # Build step (parallel)
+          make O=../out \
+            CC=clang \
+            ARCH=arm64 \
+            CROSS_COMPILE=${CROSS_COMPILE} \
+            CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32} \
+            LLVM=1 \
+            LLVM_IAS=1 \
+            LD=${LD} \
+            NM=llvm-nm \
+            OBJCOPY=llvm-objcopy \
+            -j"$(nproc)"
           # Compress kernel image as lz4
-          lz4 -9 out/arch/arm64/boot/Image out/arch/arm64/boot/Image.lz4
-
-          # List out folder contents
-          echo "Contents of out/arch/arm64/boot:"
-          ls -lh out/arch/arm64/boot/
+          lz4 -9 ../out/arch/arm64/boot/Image ../out/arch/arm64/boot/Image.lz4
           cd ..
           pwd
 
@@ -216,7 +199,7 @@ jobs:
 
       - name: Copy lz4 Image to AnyKernel3
         run: |
-          cp kernel/out/arch/arm64/boot/Image.lz4 AnyKernel3/
+          cp out/arch/arm64/boot/Image.lz4 AnyKernel3/
 
       - name: Create AnyKernel3 flashable zip
         run: |
@@ -234,4 +217,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: kernel-image-lz4
-          path: kernel/out/arch/arm64/boot/Image.lz4
+          path: out/arch/arm64/boot/Image.lz4
