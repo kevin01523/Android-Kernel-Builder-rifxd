@@ -166,6 +166,7 @@ jobs:
             KBUILD_BUILD_HOST="$KBUILD_BUILD_HOST" \
             KBUILD_BUILD_USER="$KBUILD_BUILD_USER" \
             CCACHE=1 \
+            KCFLAGS="-Wno-enum-conversion" \
             DTC_EXT=dtc "$config_path" O=out
 
           echo "Compilation started..."
@@ -189,6 +190,7 @@ jobs:
             KBUILD_BUILD_HOST="$KBUILD_BUILD_HOST" \
             KBUILD_BUILD_USER="$KBUILD_BUILD_USER" \
             CCACHE=1 \
+            KCFLAGS="-Wno-enum-conversion" \
             DTC_EXT=dtc O=out
           cd ..
 
