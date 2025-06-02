@@ -125,6 +125,7 @@ jobs:
           echo "PATH for build: $PATH"
           rm -rf kernel/out
           cd kernel
+          export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/lib64:${LD_LIBRARY_PATH}"
           config_path="sunfish_defconfig"
           # Export toolchain and utility paths as variables
           export LD_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/ld.lld"
