@@ -126,7 +126,7 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
           export CC=clang-crDroid/bin/clang
-          export LD=clang-crDroid/bin/ld.lld
+          export LD=ld.lld
           export CROSS_COMPILE=clang-crDroid/bin/aarch64-linux-gnu-
           export CROSS_COMPILE_ARM32=clang-crDroid/bin/arm-linux-gnueabi-
           export KBUILD_BUILD_HOST=pipewire
