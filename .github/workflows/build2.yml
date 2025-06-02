@@ -125,6 +125,7 @@ jobs:
           echo "PATH for build: $PATH"
           rm -rf kernel/out
           cd kernel
+          pwd
           export LD_LIBRARY_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/lib64:${LD_LIBRARY_PATH}"
           config_path="sunfish_defconfig"
           # Export toolchain and utility paths as variables
@@ -194,6 +195,7 @@ jobs:
             KCFLAGS="-Wno-enum-conversion" \
             DTC_EXT=dtc O=out
           cd ..
+          pwd
 
       - name: Clone AnyKernel3
         run: |
