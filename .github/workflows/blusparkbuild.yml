@@ -101,7 +101,7 @@ jobs:
 
       - name: Clone kernel source
         run: |
-          git clone --depth=1 --branch sunfishkernel2023 https://github.com/kevin01523/Sunfish_stock_ksu_next kernel
+          git clone --depth=1 --branch blu_spark-13 https://github.com/kevin01523/pxl4a kernel
 
       - name: Set up git identity for cherry-pick
         run: |
@@ -110,13 +110,7 @@ jobs:
           git config user.email "actions@github.com"
           cd ..
 
-      - name: Cherry-pick proton_zf6 commit 68acd6966ac98c4610813cec759afb33015d2329
-        run: |
-          cd kernel
-          git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
-          git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d2329
-          git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
-          cd ..
+      # Cherry-pick step removed since not needed for pxl4a
 
       - name: Build Kernel
         run: |
@@ -194,6 +188,13 @@ jobs:
             CCACHE=1 \
             KCFLAGS="-Wno-enum-conversion" \
             DTC_EXT=dtc O=out
+
+          # Compress kernel image as lz4
+          lz4 -9 out/arch/arm64/boot/Image out/arch/arm64/boot/Image.lz4
+
+          # List out folder contents
+          echo "Contents of out/arch/arm64/boot:"
+          ls -lh out/arch/arm64/boot/
           cd ..
           pwd
 
@@ -201,9 +202,9 @@ jobs:
         run: |
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git
 
-      - name: Copy kernel Image to AnyKernel3
+      - name: Copy lz4 Image to AnyKernel3
         run: |
-          cp kernel/out/arch/arm64/boot/Image AnyKernel3/
+          cp kernel/out/arch/arm64/boot/Image.lz4 AnyKernel3/
 
       - name: Create AnyKernel3 flashable zip
         run: |
@@ -217,8 +218,8 @@ jobs:
           name: AnyKernel3-flashable
           path: AnyKernel3-flashable.zip
 
-      - name: Upload kernel Image
+      - name: Upload lz4 kernel Image
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-image
-          path: kernel/out/arch/arm64/boot/Image
+          name: kernel-image-lz4
+          path: kernel/out/arch/arm64/boot/Image.lz4
