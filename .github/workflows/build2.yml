@@ -133,11 +133,15 @@ jobs:
           config_path="sunfish_defconfig"
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CROSS_COMPILE=$CROSS_COMPILE \
-            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 "$config_path" O=out
+            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 \
+            DTC_EXT=dtc \
+            "$config_path" O=out
           echo "Compilation started..."
           make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
             CROSS_COMPILE=$CROSS_COMPILE \
-            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 O=out
+            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 \
+            DTC_EXT=dtc \
+            O=out
           cd ..
 
       - name: Clone AnyKernel3
