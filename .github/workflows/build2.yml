@@ -126,7 +126,7 @@ jobs:
           export ARCH=arm64
           export SUBARCH=arm64
           export CC=clang-crDroid/bin/clang
-          export LD="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/ld.lld"
+          #export LD="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/ld.lld"
           echo "LD is set to: $LD"
           export LLVM=1
           export LLVM_IAS=1
