@@ -75,19 +75,27 @@ jobs:
           sudo swapon /swapfile
           free -h
 
-      - name: Download and set up Neutron Clang (Antman)
-        run: |
-          mkdir -p toolchains/neutron-clang
-          cd toolchains/neutron-clang
-          curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-          chmod +x antman
-          ./antman -S=11032023
-          cd ../..
+      # - name: Download and set up Neutron Clang (Antman)
+      #   run: |
+      #     mkdir -p toolchains/neutron-clang
+      #     cd toolchains/neutron-clang
+      #     curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
+      #     chmod +x antman
+      #     ./antman -S=11032023
+      #     cd ../..
 
-      - name: Patch glibc using Neutron Clang
+      # - name: Patch glibc using Neutron Clang
+      #   run: |
+      #     cd toolchains/neutron-clang
+      #     ./antman --patch=glibc
+      #     cd ../..
+
+      - name: Download and extract Google Clang T (r450784e)
         run: |
-          cd toolchains/neutron-clang
-          ./antman --patch=glibc
+          mkdir -p toolchains/google-clang
+          cd toolchains/google-clang
+          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/54145e0a57530b5d4f9bcec28ab42079be757824/clang-r450784e.tar.gz
+          tar -xzf clang-r450784e.tar.gz
           cd ../..
 
       - name: Clone kernel source
@@ -112,7 +120,7 @@ jobs:
       - name: Build Kernel
         run: |
           set -e
-          export PATH="$(pwd)/toolchains/neutron-clang/bin:$PATH"
+          export PATH="$(pwd)/toolchains/google-clang/bin:$PATH"
           rm -rf kernel/out
           cd kernel
           # Remove -Werror from all Makefiles before building (currently commented out)
