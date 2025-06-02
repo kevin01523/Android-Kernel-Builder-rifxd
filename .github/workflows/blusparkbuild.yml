@@ -91,7 +91,7 @@ jobs:
       - name: Download clang-crDroid toolchain
         run: |
           mkdir -p toolchains/clang-crDroid
-          git clone --depth=1 --branch 15.0 https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225 toolchains/clang-crDroid
+          git clone --depth=1 --branch 14.0 https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225 toolchains/clang-crDroid
 
       - name: Download and extract wahoo-kernel-tools
         run: |
