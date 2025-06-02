@@ -93,6 +93,12 @@ jobs:
           mkdir -p toolchains/clang-crDroid
           git clone --depth=1 --branch 15.0 https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225 toolchains/clang-crDroid
 
+      - name: Download and extract wahoo-kernel-tools
+        run: |
+          mkdir -p toolchains
+          wget -O /tmp/wahoo-kernel-tools.zip https://xdaforums.com/attachments/wahoo-kernel-tools-zip.4312566/
+          unzip /tmp/wahoo-kernel-tools.zip -d toolchains
+
       - name: Clone kernel source
         run: |
           git clone --depth=1 --branch sunfishkernel2023 https://github.com/kevin01523/Sunfish_stock_ksu_next kernel
@@ -115,7 +121,7 @@ jobs:
       - name: Build Kernel
         run: |
           set -e
-          export PATH="$(pwd)/toolchains/clang-crDroid/bin:$PATH"
+          export PATH="$(pwd)/toolchains/clang-crDroid/bin:$(pwd)/toolchains/wahoo-kernel-tools/bin:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
           export CC=clang-crDroid/bin/clang
