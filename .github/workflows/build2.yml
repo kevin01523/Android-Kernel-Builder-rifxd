@@ -123,42 +123,73 @@ jobs:
           set -e
           export PATH="$(pwd)/toolchains/clang-crDroid/bin:$(pwd)/toolchains/wahoo-kernel-tools/bin:$PATH"
           echo "PATH for build: $PATH"
-          export ARCH=arm64
-          export SUBARCH=arm64
-          export CC=clang-crDroid/bin/clang
-          export LD="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/ld.lld"
-          echo "LD is set to: $LD"
-          export LLVM=1
-          export LLVM_IAS=1
-          export CROSS_COMPILE=clang-crDroid/bin/aarch64-linux-gnu-
-          export CROSS_COMPILE_ARM32=clang-crDroid/bin/arm-linux-gnueabi-
-          export KBUILD_BUILD_HOST=pipewire
-          export KBUILD_BUILD_USER=rainyxeon
-          export AR=clang-crDroid/bin/llvm-ar
-          export NM=clang-crDroid/bin/llvm-nm
-          export OBJCOPY=clang-crDroid/bin/llvm-objcopy
-          export OBJDUMP=clang-crDroid/bin/llvm-objdump
-          export READELF=clang-crDroid/bin/llvm-readelf
-          export OBJSIZE=clang-crDroid/bin/llvm-size
-          export STRIP=clang-crDroid/bin/llvm-strip
-          export LDGOLD=clang-crDroid/bin/aarch64-linux-gnu-ld.gold
-          export LLVM_AR=clang-crDroid/bin/llvm-ar
-          export LLVM_DIS=clang-crDroid/bin/llvm-dis
-          export CCACHE=1
           rm -rf kernel/out
           cd kernel
           config_path="sunfish_defconfig"
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=$CC \
-            CROSS_COMPILE=$CROSS_COMPILE \
-            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 \
-            DTC_EXT=dtc \
-            "$config_path" O=out
+          # Export toolchain and utility paths as variables
+          export LD_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/ld.lld"
+          export CC_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/clang"
+          export CROSS_COMPILE_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/aarch64-linux-gnu-"
+          export CROSS_COMPILE_ARM32_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/arm-linux-gnueabi-"
+          export AR_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-ar"
+          export NM_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-nm"
+          export OBJCOPY_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-objcopy"
+          export OBJDUMP_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-objdump"
+          export READELF_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-readelf"
+          export OBJSIZE_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-size"
+          export STRIP_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-strip"
+          export LDGOLD_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/aarch64-linux-gnu-ld.gold"
+          export LLVM_AR_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-ar"
+          export LLVM_DIS_PATH="$GITHUB_WORKSPACE/toolchains/clang-crDroid/bin/llvm-dis"
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export KBUILD_BUILD_HOST=pipewire
+          export KBUILD_BUILD_USER=rainyxeon
+          export CCACHE=1
+
+          make -j$(nproc) \
+            LD="$LD_PATH" \
+            CC="$CC_PATH" \
+            CROSS_COMPILE="$CROSS_COMPILE_PATH" \
+            CROSS_COMPILE_ARM32="$CROSS_COMPILE_ARM32_PATH" \
+            AR="$AR_PATH" \
+            NM="$NM_PATH" \
+            OBJCOPY="$OBJCOPY_PATH" \
+            OBJDUMP="$OBJDUMP_PATH" \
+            READELF="$READELF_PATH" \
+            OBJSIZE="$OBJSIZE_PATH" \
+            STRIP="$STRIP_PATH" \
+            LDGOLD="$LDGOLD_PATH" \
+            LLVM_AR="$LLVM_AR_PATH" \
+            LLVM_DIS="$LLVM_DIS_PATH" \
+            LLVM=1 LLVM_IAS=1 \
+            KBUILD_BUILD_HOST="$KBUILD_BUILD_HOST" \
+            KBUILD_BUILD_USER="$KBUILD_BUILD_USER" \
+            CCACHE=1 \
+            DTC_EXT=dtc "$config_path" O=out
+
           echo "Compilation started..."
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=$CC \
-            CROSS_COMPILE=$CROSS_COMPILE \
-            CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 \
-            DTC_EXT=dtc \
-            O=out
+
+          make -j$(nproc) \
+            LD="$LD_PATH" \
+            CC="$CC_PATH" \
+            CROSS_COMPILE="$CROSS_COMPILE_PATH" \
+            CROSS_COMPILE_ARM32="$CROSS_COMPILE_ARM32_PATH" \
+            AR="$AR_PATH" \
+            NM="$NM_PATH" \
+            OBJCOPY="$OBJCOPY_PATH" \
+            OBJDUMP="$OBJDUMP_PATH" \
+            READELF="$READELF_PATH" \
+            OBJSIZE="$OBJSIZE_PATH" \
+            STRIP="$STRIP_PATH" \
+            LDGOLD="$LDGOLD_PATH" \
+            LLVM_AR="$LLVM_AR_PATH" \
+            LLVM_DIS="$LLVM_DIS_PATH" \
+            LLVM=1 LLVM_IAS=1 \
+            KBUILD_BUILD_HOST="$KBUILD_BUILD_HOST" \
+            KBUILD_BUILD_USER="$KBUILD_BUILD_USER" \
+            CCACHE=1 \
+            DTC_EXT=dtc O=out
           cd ..
 
       - name: Clone AnyKernel3
