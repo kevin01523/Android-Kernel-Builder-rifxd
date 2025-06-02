@@ -1,4 +1,4 @@
-name: Android Kernel Build (AOSP Tools, Official Clang, Sunfish)
+name: Android Kernel Build (clang-crDroid, Sunfish)
 
 on:
   workflow_dispatch:
@@ -65,7 +65,20 @@ jobs:
             xsltproc \
             ftp \
             lftp \
-            clang
+            clang \
+            tar \
+            gzip \
+            bzip2 \
+            rar \
+            unrar \
+            checkinstall \
+            libncursesw5-dev \
+            libsqlite3-dev \
+            tk-dev \
+            libgdbm-dev \
+            libc6-dev \
+            libbz2-dev \
+            libffi-dev
 
       - name: Add swap space
         run: |
@@ -75,28 +88,10 @@ jobs:
           sudo swapon /swapfile
           free -h
 
-      # - name: Download and set up Neutron Clang (Antman)
-      #   run: |
-      #     mkdir -p toolchains/neutron-clang
-      #     cd toolchains/neutron-clang
-      #     curl -LO "https://raw.githubusercontent.com/Neutron-Toolchains/antman/main/antman"
-      #     chmod +x antman
-      #     ./antman -S=11032023
-      #     cd ../..
-
-      # - name: Patch glibc using Neutron Clang
-      #   run: |
-      #     cd toolchains/neutron-clang
-      #     ./antman --patch=glibc
-      #     cd ../..
-
-      - name: Download and extract Google Clang T (r450784e)
+      - name: Download clang-crDroid toolchain
         run: |
-          mkdir -p toolchains/google-clang
-          cd toolchains/google-clang
-          wget https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/54145e0a57530b5d4f9bcec28ab42079be757824/clang-r450784e.tar.gz
-          tar -xzf clang-r450784e.tar.gz
-          cd ../..
+          mkdir -p toolchains/clang-crDroid
+          git clone --depth=1 --branch 15.0 https://gitlab.com/crdroidandroid/android_prebuilts_clang_host_linux-x86_clang-r536225 toolchains/clang-crDroid
 
       - name: Clone kernel source
         run: |
@@ -120,24 +115,38 @@ jobs:
       - name: Build Kernel
         run: |
           set -e
-          export PATH="$(pwd)/toolchains/google-clang/bin:$PATH"
-          rm -rf kernel/out
-          cd kernel
-          # Remove -Werror from all Makefiles before building (currently commented out)
-          # find . -type f -name 'Makefile*' -exec sed -i 's/-Werror//g' {} +
+          export PATH="$(pwd)/toolchains/clang-crDroid/bin:$PATH"
           export ARCH=arm64
           export SUBARCH=arm64
-          export LD=ld.lld
-          export CROSS_COMPILE=aarch64-linux-gnu-
-          export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+          export CC=clang-crDroid/bin/clang
+          export LD=clang-crDroid/bin/ld.lld
+          export CROSS_COMPILE=clang-crDroid/bin/aarch64-linux-gnu-
+          export CROSS_COMPILE_ARM32=clang-crDroid/bin/arm-linux-gnueabi-
+          export KBUILD_BUILD_HOST=pipewire
+          export KBUILD_BUILD_USER=rainyxeon
+          export LLVM=1
+          export LLVM_IAS=1
+          export AR=clang-crDroid/bin/llvm-ar
+          export NM=clang-crDroid/bin/llvm-nm
+          export OBJCOPY=clang-crDroid/bin/llvm-objcopy
+          export OBJDUMP=clang-crDroid/bin/llvm-objdump
+          export READELF=clang-crDroid/bin/llvm-readelf
+          export OBJSIZE=clang-crDroid/bin/llvm-size
+          export STRIP=clang-crDroid/bin/llvm-strip
+          export LDGOLD=clang-crDroid/bin/aarch64-linux-gnu-ld.gold
+          export LLVM_AR=clang-crDroid/bin/llvm-ar
+          export LLVM_DIS=clang-crDroid/bin/llvm-dis
+          export CCACHE=1
+          rm -rf kernel/out
+          cd kernel
           config_path="sunfish_defconfig"
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=$CC \
             CROSS_COMPILE=$CROSS_COMPILE \
             CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 \
             DTC_EXT=dtc \
             "$config_path" O=out
           echo "Compilation started..."
-          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=clang \
+          make -j$(nproc) ARCH=$ARCH SUBARCH=$SUBARCH CC=$CC \
             CROSS_COMPILE=$CROSS_COMPILE \
             CROSS_COMPILE_ARM32=$CROSS_COMPILE_ARM32 \
             DTC_EXT=dtc \
