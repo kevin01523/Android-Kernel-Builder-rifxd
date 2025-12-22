@@ -194,7 +194,7 @@ jobs:
             OBJCOPY=llvm-objcopy \
             -j"$(nproc)"
           # Compress kernel image as lz4
-          lz4 -9 ../out/arch/arm64/boot/Image ../out/arch/arm64/boot/Image.lz4
+          # lz4 -9 ../out/arch/arm64/boot/Image ../out/arch/arm64/boot/Image.lz4
           cd ..
           pwd
 
