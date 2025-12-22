@@ -157,6 +157,9 @@ jobs:
         run: |
           set -e
           export KERNEL_DIR="${PWD}/aosp-tools"
+          export KBUILD_BUILD_USER="sette"
+          export KBUILD_BUILD_HOST="google"
+          export KBUILD_COMPILER_STRING
           export PATH="${KERNEL_DIR}/clang-r450784d/bin:${PATH}"
           export PATH="${KERNEL_DIR}/aarch64-linux-android-4.9/bin:${PATH}"
           export PATH="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin:${PATH}"
