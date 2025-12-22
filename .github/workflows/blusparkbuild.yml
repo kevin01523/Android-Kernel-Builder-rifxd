@@ -110,6 +110,7 @@ jobs:
           mkdir arm-linux-androideabi-4.9
           tar -xzf arm-linux-androideabi-4.9.tar.gz -C arm-linux-androideabi-4.9
           echo "Toolchain downloads and extraction complete."
+          ls -la
           cd ..
 
       - name: Fix binutils symlinks
@@ -158,10 +159,6 @@ jobs:
         run: |
           set -e
           export KERNEL_DIR="${PWD}/aosp-tools"
-          export KBUILD_BUILD_USER="sette"
-          export KBUILD_BUILD_HOST="google"
-          KBUILD_COMPILER_STRING="$(${KERNEL_DIR}/clang-r450784d/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')"
-          export KBUILD_COMPILER_STRING
           export PATH="${KERNEL_DIR}/clang-r450784d/bin:${PATH}"
           export PATH="${KERNEL_DIR}/aarch64-linux-android-4.9/bin:${PATH}"
           export PATH="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin:${PATH}"
@@ -169,7 +166,9 @@ jobs:
           export LD=ld.lld
           export CROSS_COMPILE="${KERNEL_DIR}/aarch64-linux-android-4.9/bin/aarch64-linux-gnu-"
           export CROSS_COMPILE_ARM32="${KERNEL_DIR}/arm-linux-androideabi-4.9/bin/arm-linux-gnueabi-"
-          export KBUILD_COMPILER_STRING=$(/home/semaphore/clang/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
+          export KBUILD_BUILD_USER="sette"
+          export KBUILD_BUILD_HOST="google"
+          export KBUILD_COMPILER_STRING=$(${KERNEL_DIR}/clang-r450784d/bin/clang --version | head -n 1 | perl -pe 's/\(http.*?\)//gs' | sed -e 's/  */ /g' -e 's/[[:space:]]*$//')
           DEFCONFIG="blu_spark_defconfig"
           rm -rf kernel/out
           cd kernel
