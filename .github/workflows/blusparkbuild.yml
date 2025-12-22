@@ -78,7 +78,8 @@ jobs:
             libgdbm-dev \
             libc6-dev \
             libbz2-dev \
-            libffi-dev
+            libffi-dev \
+            perl
 
       - name: Add swap space
         run: |
