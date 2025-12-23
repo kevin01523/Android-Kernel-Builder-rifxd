@@ -234,7 +234,7 @@ jobs:
       - name: Upload  kernel Image
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-image-lz4
+          name: kernel-image
           path: out/arch/arm64/boot/Image
           
       - name: Create release
