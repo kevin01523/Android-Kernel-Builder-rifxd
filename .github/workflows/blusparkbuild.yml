@@ -253,7 +253,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a "$TAG" "$KERNEL_COMMIT" -m "Release $TAG"
-          git push "https://x-access-token:${REPO_PAT}@github.com/${{ github.repository }}" "$TAG"
+          git push "https://x-access-token:${SECRETS}@github.com/${{ github.repository }}" "$TAG"
   
       - name: Create release
         uses: softprops/action-gh-release@v2.1.0
