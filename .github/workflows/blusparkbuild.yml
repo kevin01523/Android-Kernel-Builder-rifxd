@@ -237,16 +237,32 @@ jobs:
           name: kernel-image
           path: out/arch/arm64/boot/Image
           
+      - name: Compute short tag
+        env:
+          KERNEL_COMMIT: ${{ env.KERNEL_COMMIT }}
+        run: |
+          SHORT="${KERNEL_COMMIT:0:7}"
+          TAG="release-$(date +'%Y%m%d')-${SHORT}"
+          echo "TAG=${TAG}" >> $GITHUB_ENV
+
+      - name: Create and push tag using PAT
+        env:
+          REPO_PAT: ${{ secrets.REPO_PAT }}
+          KERNEL_COMMIT: ${{ env.KERNEL_COMMIT }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" "$KERNEL_COMMIT" -m "Release $TAG"
+          git push "https://x-access-token:${REPO_PAT}@github.com/${{ github.repository }}" "$TAG"
+  
       - name: Create release
         uses: softprops/action-gh-release@v2.1.0
         with:
-          tag_name: release-$(date +'%Y%m%d')-${{ env.KERNEL_COMMIT }}
-          name: Kernel Release $(date +'%Y-%m-%d') - ${{ env.KERNEL_COMMIT }}
+          tag_name: ${{ env.TAG }}
+          name: Kernel Release ${{ env.TAG }}
           files: |
             AnyKernel3-flashable.zip
             out/arch/arm64/boot/Image.lz4
             out/arch/arm64/boot/Image
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
