@@ -154,9 +154,9 @@ jobs:
       - name: Cherry-pick proton_zf6 commit 68acd6966ac98c4610813cec759afb33015d2329 and ptrace fix
         run: |
           cd kernel
-          git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
-          git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d2329
-          git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
+          # git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
+          # git fetch proton_zf6 68acd6966ac98c4610813cec759afb33015d2329
+          # git cherry-pick 68acd6966ac98c4610813cec759afb33015d2329
           git remote add fifteen https://github.com/devnoname120/kernel_xiaomi_sm6150.git
           git fetch fifteen fce5582771e1254af065aaa2778940659e246611 
           git cherry-pick fce5582771e1254af065aaa2778940659e246611
