@@ -138,7 +138,7 @@ jobs:
 
       - name: Clone kernel source
         run: |
-          git clone  --recurse-submodules --shallow-submodules --depth 1  --branch blu_spark_ksu_next_susfs-13 https://github.com/kevin01523/pxl4a kernel
+          git clone --recursive --depth 1  --branch blu_spark_ksu_next_susfs-13 https://github.com/kevin01523/pxl4a kernel
           cd kernel
           echo "KERNEL_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
