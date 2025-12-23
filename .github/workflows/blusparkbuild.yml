@@ -138,7 +138,11 @@ jobs:
 
       - name: Clone kernel source
         run: |
-          git clone --depth=1 --branch blu_spark-13 https://github.com/kevin01523/pxl4a kernel
+          git clone --depth=1 --branch blu_spark_ksu_next_susfs-13 https://github.com/kevin01523/pxl4a kernel
+          cd kernel
+          echo "KERNEL_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
+
+          
 
       - name: Set up git identity for cherry-pick
         run: |
@@ -147,7 +151,7 @@ jobs:
           git config user.email "actions@github.com"
           cd ..
 
-      - name: Cherry-pick proton_zf6 commit 68acd6966ac98c4610813cec759afb33015d2329
+      - name: Cherry-pick proton_zf6 commit 68acd6966ac98c4610813cec759afb33015d2329 and ptrace fix
         run: |
           cd kernel
           git remote add proton_zf6 https://github.com/kdrag0n/proton_zf6.git
@@ -226,3 +230,23 @@ jobs:
         with:
           name: kernel-image-lz4
           path: out/arch/arm64/boot/Image.lz4
+
+      - name: Upload  kernel Image
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-image-lz4
+          path: out/arch/arm64/boot/Image
+          
+      - name: Create release
+        uses: softprops/action-gh-release@v2.1.0
+        with:
+          tag_name: release-$(date +'%Y%m%d')-${{ env.KERNEL_COMMIT }}
+          name: Kernel Release $(date +'%Y-%m-%d') - ${{ env.KERNEL_COMMIT }}
+          files: |
+            AnyKernel3-flashable.zip
+            out/arch/arm64/boot/Image.lz4
+            out/arch/arm64/boot/Image
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
