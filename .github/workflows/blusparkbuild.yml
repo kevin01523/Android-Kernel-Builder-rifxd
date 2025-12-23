@@ -247,7 +247,7 @@ jobs:
 
       - name: Create and push tag using PAT
         env:
-          REPO_PAT: ${{ secrets.REPO_PAT }}
+          REPO_PAT: ${{ secrets.SECRETS }}
           KERNEL_COMMIT: ${{ env.KERNEL_COMMIT }}
         run: |
           git config user.name "github-actions[bot]"
