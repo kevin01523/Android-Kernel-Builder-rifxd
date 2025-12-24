@@ -138,7 +138,7 @@ jobs:
 
       - name: Clone kernel source
         run: |
-          git clone --recursive --depth 1  --branch blu_spark_ksu_next_susfs-13 https://github.com/kevin01523/pxl4a kernel
+          git clone --recursive --depth 1  --branch blu_spark13_ksun111sus12 https://github.com/kevin01523/pxl4a kernel
           cd kernel
           echo "KERNEL_COMMIT=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
@@ -284,7 +284,7 @@ jobs:
           tag_name: ${{ env.TAG }}
           name: "Kernel Build ${{ env.TAG }}"
           body: |
-            Automated kernel build from branch `${{ steps.vars.outputs.branch_name }}` commit `${{ $KERNEL_COMMIT" }}`.
+            Automated kernel build from branch blu_spark13_ksun111sus12 commit `${{ $SHORT }}`.
           files: |
             AnyKernel3-flashable.zip
             out/arch/arm64/boot/Image.lz4
