@@ -245,24 +245,49 @@ jobs:
           TAG="release-$(date +'%Y%m%d')-${SHORT}"
           echo "TAG=${TAG}" >> $GITHUB_ENV
 
-      - name: Create and push tag using PAT
-        env:
-          REPO_PAT: ${{ secrets.SECRETS }}
-          KERNEL_COMMIT: ${{ env.KERNEL_COMMIT }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a "$TAG" "$KERNEL_COMMIT" -m "Release $TAG"
-          git push "https://x-access-token:${SECRETS}@github.com/${{ github.repository }}" "$TAG"
+#      - name: Create and push tag using PAT
+#        env:
+#          REPO_PAT: ${{ secrets.SECRETS }}
+#          KERNEL_COMMIT: ${{ env.KERNEL_COMMIT }}
+#        run: |
+#          git config user.name "github-actions[bot]"
+#          git config user.email "github-actions[bot]@users.noreply.github.com"
+#         git tag -a "$TAG" "$KERNEL_COMMIT" -m "Release $TAG"
+#          git push "https://x-access-token:${SECRETS}@github.com/${{ github.repository }}" "$TAG"
   
-      - name: Create release
-        uses: softprops/action-gh-release@v2.1.0
+#      - name: Create release
+#        uses: softprops/action-gh-release@v2.1.0
+#        with:
+#          tag_name: ${{ env.TAG }}
+#          name: Kernel Release ${{ env.TAG }}
+#          files: |
+#            AnyKernel3-flashable.zip
+#            out/arch/arm64/boot/Image.lz4
+#            out/arch/arm64/boot/Image
+
+
+
+      - name: Set up Git for pushing tags
+        run: |
+          git config --global user.name "${GITHUB_ACTOR}"
+          git config --global user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.SECRETS }}@github.com/${{ github.repository }}.git
+
+      - name: Create and push tag
+        run: |
+          git tag ${{ env.TAG}}
+          git push origin ${{ env.TAG }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG }}
-          name: Kernel Release ${{ env.TAG }}
+          name: "Kernel Build ${{ env.TAG }}"
+          body: |
+            Automated kernel build from branch `${{ steps.vars.outputs.branch_name }}` commit `${{ $KERNEL_COMMIT" }}`.
           files: |
             AnyKernel3-flashable.zip
             out/arch/arm64/boot/Image.lz4
             out/arch/arm64/boot/Image
-
-
+        env:
+          GITHUB_TOKEN: ${{ secrets.SECRETS }}
