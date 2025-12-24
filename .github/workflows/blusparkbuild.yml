@@ -284,7 +284,7 @@ jobs:
           tag_name: ${{ env.TAG }}
           name: "Kernel Build ${{ env.TAG }}"
           body: |
-            Automated kernel build from branch blu_spark13_ksun111sus12 commit `${{ $SHORT }}`.
+            Automated kernel build from branch blu_spark13_ksun111sus12 commit ${{ $SHORT }}.
           files: |
             AnyKernel3-flashable.zip
             out/arch/arm64/boot/Image.lz4
