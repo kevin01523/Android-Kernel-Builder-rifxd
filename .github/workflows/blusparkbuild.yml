@@ -95,10 +95,10 @@ jobs:
           mkdir -p aosp-tools
           cd aosp-tools
           echo "Downloading official Android 13 clang (r450784d, android13-qpr3-s9-release)..."
-          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/android13-qpr3-s9-release/clang-r450784d.tar.gz
+          wget -q https://github.com/devnoname120/android_prebuilts_clang-standalone/releases/download/linux-x86-refs_heads_android15-qpr2-release-clang-r530567/linux-x86-refs_heads_android15-qpr2-release-clang-r530567.tar.gz
           echo "Extracting clang..."
           mkdir clang-r450784d
-          tar -xzf clang-r450784d.tar.gz -C clang-r450784d
+          tar -xzf linux-x86-refs_heads_android15-qpr2-release-clang-r530567.tar.gz -C clang-r450784d
           echo "Downloading AOSP GCC 4.9 for aarch64 (commit 606f80986096476912e04e5c2913685a8f2c3b65)..."
           wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/+archive/606f80986096476912e04e5c2913685a8f2c3b65.tar.gz -O aarch64-linux-android-4.9.tar.gz
           echo "Extracting aarch64 GCC..."
